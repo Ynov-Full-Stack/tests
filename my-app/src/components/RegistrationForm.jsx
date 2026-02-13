@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { validatePostCode, validateEmail, validateIdentity } from "../validator";
 import { calculateAge } from "../module";
 
+
 function RegistrationForm() {
     const [form, setForm] = useState({
         lastname: "",
@@ -58,19 +59,20 @@ function RegistrationForm() {
     };
 
     return (
-        <form onSubmit={handleSubmit} data-testid="form">
-            <input name="firstname" placeholder="Firstname" onChange={handleChange} />
-            <input name="lastname" placeholder="Lastname" onChange={handleChange} />
-            <input name="email" placeholder="Email" onChange={handleChange} />
-            <input name="birth" type="date"   data-testid="birth" onChange={handleChange} />
-            <input name="city" placeholder="City" onChange={handleChange} />
-            <input name="postalCode" placeholder="Postal Code" onChange={handleChange} />
+        <form onSubmit={handleSubmit} data-testid="form" className="max-w-md mx-auto bg-white shadow-lg rounded-xl p-6 space-y-4">
+            <input name="firstname" placeholder="Firstname" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+            <input name="lastname" placeholder="Lastname" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+            <input name="email" placeholder="Email" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"/>
+            <input name="birth" type="date"   data-testid="birth" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"/>
+            <input name="city" placeholder="City" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"/>
+            <input name="postalCode" placeholder="Postal Code" onChange={handleChange} className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"/>
 
             {Object.values(errors).map((err, index) => (
                 <p key={index}>{err}</p>
             ))}
 
-            <button type="submit">Submit</button>
+            <button type="submit"className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200"
+            >Submit</button>
         </form>
     );
 }
