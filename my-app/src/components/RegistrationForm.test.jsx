@@ -104,9 +104,10 @@ describe("RegistrationForm Integration", () => {
         // 5. default: - city
         const city = screen.getByPlaceholderText("City");
         fireEvent.change(city, { target: { value: "Paris" } });
-        fireEvent.blur(city); // ✅ Passe par default: du switch
+        fireEvent.blur(city);
 
         // Vérification : tous les cases sont exécutés
         expect(screen.getAllByText(/must/i)).toHaveLength(4);
     });
+
 });
