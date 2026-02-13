@@ -2,79 +2,111 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import RegistrationForm from "./RegistrationForm";
 
 /**
- * Mock localStorage.setItem
+ * Mock localStorage
  */
 beforeEach(() => {
-    Storage.prototype.setItem = jest.fn();
+    const localStorageMock = {
+        setItem: jest.fn(),
+        getItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+    };
+    Object.defineProperty(window, 'localStorage', {
+        value: localStorageMock,
+        writable: true,
+    });
 });
 
-describe("RegistrationForm Integration", () => {
+/**
+ * Clear du mock après le test
+ */
+afterEach(() => {
+    jest.clearAllMocks();
+});
 
-    /**
-     * Vérification du rendu du formulaire
-     */
+
+describe("RegistrationForm Integration", () => {
+    // Vérification du rendu du formulaire
     test("renders form", () => {
         render(<RegistrationForm />);
         expect(screen.getByTestId("form")).toBeInTheDocument();
     });
-
-    /**
-     * Vérification de l'affichage des erreurs de validation
-     */
-    test("shows validation errors", () => {
+    // Vérification du bouton disable en premier lieu
+    test("submit button is disabled when form is invalid", () => {
         render(<RegistrationForm />);
-
-        // simulation sans changement de valeur
-        fireEvent.submit(screen.getByTestId("form"));
-        // Les messages d’erreur provenant du validator contiennent "must".
-        expect(screen.getAllByText(/must/i).length).toBeGreaterThan(0);
+        expect(screen.getByRole("button", { name: /submit/i })).toBeDisabled();
     });
 
-    /**
-     * Vérification de la soumission valide + sauvegarde
-     */
-    test("submits valid form and saves to localStorage", () => {
+    // Vérification du bouton valid lorsque formulaire rempli
+    test("submit button is enabled when form is valid", () => {
         render(<RegistrationForm />);
-
-        // Simulation de la saisie des champs texte
-        fireEvent.change(screen.getByPlaceholderText("Firstname"), {
-            target: { value: "Jean" },
-        });
-
-        fireEvent.change(screen.getByPlaceholderText("Lastname"), {
-            target: { value: "Dupont" },
-        });
-
-        fireEvent.change(screen.getByPlaceholderText("Email"), {
-            target: { value: "email@email.fr" },
-        });
-
-        fireEvent.change(screen.getByPlaceholderText("Postal Code"), {
-            target: { value: "13002" },
-        });
-
-        fireEvent.change(screen.getByPlaceholderText("City"), {
-            target: { value: "Paris" },
-        });
-
-        // Création d'une date valide (> 18 ans)
+        // Remplir TOUS les champs
+        fireEvent.change(screen.getByPlaceholderText("Firstname"), { target: { value: "Jean" } });
+        fireEvent.change(screen.getByPlaceholderText("Lastname"), { target: { value: "Dupont" } });
+        fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "test@email.fr" } });
+        fireEvent.change(screen.getByPlaceholderText("Postal Code"), { target: { value: "13002" } });
+        fireEvent.change(screen.getByPlaceholderText("City"), { target: { value: "Paris" } });
         const birth = new Date();
         birth.setFullYear(birth.getFullYear() - 20);
-
-        // Simulation de la saisie de la date de naissance
-        fireEvent.change(
-            screen.getByTestId("birth"),
-            { target: { value: birth.toISOString().split("T")[0] } }
-        );
-
-        fireEvent.submit(screen.getByTestId("form"));
-
-        // Vérifie que localStorage.setItem a été appelé
-        // avec la clé "user" et une valeur de type string (JSON.stringify)
-        expect(localStorage.setItem).toHaveBeenCalledWith(
-            "user",
-            expect.any(String)
-        );
+        fireEvent.change(screen.getByTestId("birth"), { target: { value: birth.toISOString().split("T")[0] } });
+        expect(screen.getByRole("button", { name: /submit/i })).not.toBeDisabled();
     });
 
+    // Vérification de l'affichage des erreurs lorsque formulaire invalide
+    test("shows validation errors on submit with empty form", () => {
+        render(<RegistrationForm />);
+        fireEvent.submit(screen.getByTestId("form"));
+        expect(screen.getAllByText(/must/i)).toHaveLength(4);
+    });
+
+    // Vérification de l'enregistrement du formulaire dans localStorage'
+    test("submits valid form and shows success message", () => {
+        render(<RegistrationForm />);
+        fireEvent.change(screen.getByPlaceholderText("Firstname"), { target: { value: "Jean" } });
+        fireEvent.change(screen.getByPlaceholderText("Lastname"), { target: { value: "Dupont" } });
+        fireEvent.change(screen.getByPlaceholderText("Email"), { target: { value: "test@email.fr" } });
+        fireEvent.change(screen.getByPlaceholderText("Postal Code"), { target: { value: "13002" } });
+        fireEvent.change(screen.getByPlaceholderText("City"), { target: { value: "Paris" } });
+        const birth = new Date();
+        birth.setFullYear(birth.getFullYear() - 20);
+        fireEvent.change(screen.getByTestId("birth"), { target: { value: birth.toISOString().split("T")[0] } });
+        fireEvent.submit(screen.getByTestId("form"));
+        expect(localStorage.setItem).toHaveBeenCalledWith("user", expect.any(String));
+        expect(screen.getByText(/user saved successfully/i)).toBeInTheDocument();
+    });
+
+    // Vérification de la validation des champs individuels
+    test("triggers all validation cases via individual field validation", () => {
+        render(<RegistrationForm />);
+
+        // 1. case "firstname"/"lastname"
+        const firstname = screen.getByPlaceholderText("Firstname");
+        fireEvent.change(firstname, { target: { value: "" } });
+        fireEvent.blur(firstname);
+
+        // 2. case "email"
+        const email = screen.getByPlaceholderText("Email");
+        fireEvent.change(email, { target: { value: "invalid" } });
+        fireEvent.blur(email);
+
+        // 3. case "postalCode"
+        const postalCode = screen.getByPlaceholderText("Postal Code");
+        fireEvent.change(postalCode, { target: { value: "ABC" } });
+        fireEvent.blur(postalCode);
+
+        // 4. case "birth"
+        const birthInput = screen.getByTestId("birth");
+        const minorDate = new Date();
+        minorDate.setFullYear(minorDate.getFullYear() - 17);
+        fireEvent.change(birthInput, { target: { value: minorDate.toISOString().split("T")[0] } });
+        fireEvent.blur(birthInput);
+
+        // 5. default: - city
+        const city = screen.getByPlaceholderText("City");
+        fireEvent.change(city, { target: { value: "Paris" } });
+        fireEvent.blur(city); // ✅ Passe par default: du switch
+
+        // Vérification : tous les cases sont exécutés
+        expect(screen.getAllByText(/must/i)).toHaveLength(4);
+    });
 });
