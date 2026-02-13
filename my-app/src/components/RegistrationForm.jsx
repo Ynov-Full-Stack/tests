@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { validatePostCode, validateEmail, validateIdentity } from "../../../validator";
-import { calculateAge } from "../../../module";
+import { validatePostCode, validateEmail, validateIdentity } from "../validator";
+import { calculateAge } from "../module";
 
 function RegistrationForm() {
     const [form, setForm] = useState({
@@ -62,7 +62,7 @@ function RegistrationForm() {
             <input name="firstname" placeholder="Firstname" onChange={handleChange} />
             <input name="lastname" placeholder="Lastname" onChange={handleChange} />
             <input name="email" placeholder="Email" onChange={handleChange} />
-            <input name="birth" type="date" onChange={handleChange} />
+            <input name="birth" type="date"   data-testid="birth" onChange={handleChange} />
             <input name="city" placeholder="City" onChange={handleChange} />
             <input name="postalCode" placeholder="Postal Code" onChange={handleChange} />
 
