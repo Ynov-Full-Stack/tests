@@ -46,6 +46,10 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+      - name: JSDoc
+        run: pnpm run doc
+
   deploy:
     needs: build_test
     runs-on: ubuntu-latest
