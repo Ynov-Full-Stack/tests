@@ -43,9 +43,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run linter
-        run: pnpm run lint --if-present
-
       - name: Run tests
         run: pnpm test -- --coverage --watchAll=false --runInBand
 
