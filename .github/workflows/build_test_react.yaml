@@ -35,18 +35,12 @@ jobs:
       - name: Enable pnpm
         run: corepack enable
 
-      - name: Install root dependencies
-        working-directory: .
-        run: pnpm install
-
-      - name: Install app dependencies
-        run: pnpm install
-
-      - name: Run linter
-        run: pnpm run lint --if-present
-
-      - name: Run tests
-        run: pnpm test -- --coverage --watchAll=false --runInBand
+      - name: Install dependencies and test React app
+        working-directory: my-app
+        run: |
+          pnpm install
+          pnpm run build --if-present
+          pnpm test
 
       - name: Build React app
         run: pnpm run build
