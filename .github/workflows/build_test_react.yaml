@@ -5,29 +5,31 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
 jobs:
   build_test:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         node_version: [20.x, 21.x]
+
     steps:
-      - name: Clone repository
+      - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Use Node.js ${{matrix.node_version}}
+      - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: ${{matrix.node_version}}
+          node-version: ${{ matrix.node_version }}
+          cache: 'pnpm'
       - name: Install pnpm
         run: npm install -g pnpm
       - name: Install dependencies
+        working-directory: my-app
         run: pnpm install --frozen-lockfile
-      - name: Build pnpm 
+      - name: Build
+        working-directory: my-app
         run: pnpm run build --if-present
       - name: Test
-        run: pnpm test
-      - name: pnpm ci, build and test
-        run: |
-          pnpm ci
-          pnpm run build --if-present
-          pnpm test
+        working-directory: my-app
+        run: pnpm test --if-present
