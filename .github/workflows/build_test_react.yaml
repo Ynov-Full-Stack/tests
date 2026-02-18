@@ -41,6 +41,11 @@ jobs:
         with:
           path: ./my-app/build
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   deploy:
     needs: build_test
     runs-on: ubuntu-latest
