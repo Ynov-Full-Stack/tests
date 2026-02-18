@@ -16,23 +16,43 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
+
       - name: Enable pnpm (via corepack)
         run: corepack enable
+
       - name: Install dependencies and test React app
         working-directory: my-app
         run: |
           pnpm install
           pnpm run build --if-present
           pnpm test
+
       - name: Setup Pages
-        id: pages
         uses: actions/configure-pages@v3
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./my-app/build
+
+  deploy:
+    needs: build_test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
