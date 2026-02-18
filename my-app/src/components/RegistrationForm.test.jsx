@@ -1,5 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import RegistrationForm from "./RegistrationForm";
+import '@testing-library/jest-dom';
+
 
 /**
  * Mock localStorage
