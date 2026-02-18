@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --coverage",
-    "jsdoc": "jsdoc -R ./README.md -c ./jsdoc.config.json -r -d ./public/docs"
+    "jsdoc": "jsdoc -R ./my-app/README.md -c ./jsdoc.config.json -r ./my-app/src -d ./public/docs"
   },
   "keywords": [],
   "author": "",
