@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node_version: [24.x, 25.x]
+        node_version: [20.x, 21.x]
     steps:
       - name: Clone repository
         uses: actions/checkout@v2
@@ -18,6 +18,14 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{matrix.node_version}}
+      - name: Install pnpm
+        run: npm install -g pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build pnpm 
+        run: pnpm run build --if-present
+      - name: Test
+        run: pnpm test
       - name: pnpm ci, build and test
         run: |
           pnpm ci
