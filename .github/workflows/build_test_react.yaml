@@ -48,7 +48,7 @@ jobs:
           fail_ci_if_error: true
 
       - name: JSDoc
-        run: pnpm run doc
+        run: pnpm run jsdoc
 
   deploy:
     needs: build_test
