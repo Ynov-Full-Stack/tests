@@ -21,6 +21,10 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node_version }}
+      - name: Debug
+        run: |
+          pwd
+          ls
       - name: npm ci and test
         working-directory: my-app
         run: |
