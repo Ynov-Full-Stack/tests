@@ -21,8 +21,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node_version }}
-      - name: move to dir
-        run: cd my-app
       - name: npm ci and test
         run: |
           npm ci
