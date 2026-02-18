@@ -1,4 +1,5 @@
-name: CI/CD - React App + JSDoc Deploy
+name: Build and Test React application
+
 on:
   push:
     branches: [main]
@@ -7,82 +8,82 @@ on:
 
 jobs:
   build_test:
-    name: Build, Test & Generate Docs
+    name: Build and Test React application
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
+    strategy:
+      matrix:
+        node_version: [21.x]
 
     defaults:
       run:
         working-directory: my-app
 
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: 20.x
+          node-version: ${{ matrix.node_version }}
           cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            my-app/pnpm-lock.yaml
+          cache-dependency-path: my-app/package-lock.json
 
-      - name: Enable pnpm
+      - name: Enable pnpm (via corepack)
         run: corepack enable
 
-      - name: Install dependencies and test React app
-        working-directory: my-app
+      - name: pnpm ci, build, and test
         run: |
           pnpm install
+          pnpm ci
           pnpm run build --if-present
-          pnpm test
+          pnpm test -- --watchAll=false --runInBand --coverage
 
-      - name: Build React app
-        run: pnpm run build
-
-      - name: Generate JSDoc
-        working-directory: .
-        run: pnpm run jsdoc
-
-      - name: Copy JSDoc into build folder
-        run: |
-          mkdir -p build/docs
-          cp -r ../public/docs/* build/docs/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: my-app/build
-
-      - name: Upload coverage to Codecov
+      - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: my-app/coverage
           fail_ci_if_error: false
 
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: ./my-app/coverage/
+          if-no-files-found: warn
+
+      - name: Generate JSDoc
+        run: pnpm run jsdoc
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload build + doc
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: my-app/build
+          if-no-files-found: error
+
   deploy:
-    name: Deploy to GitHub Pages
+    name: deploy
     needs: build_test
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    permissions:
-      pages: write
-      id-token: write
-
     steps:
-      - name: Deploy
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
