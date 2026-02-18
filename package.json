@@ -1,7 +1,7 @@
 {
   "name": "tests",
   "version": "1.0.0",
-  "homepage": "https://github.com/Ynov-Full-Stack/tests",
+  "homepage": "https://github.com/Ynov-Full-Stack/tests/my-app",
   "description": "",
   "main": "index.js",
   "scripts": {
