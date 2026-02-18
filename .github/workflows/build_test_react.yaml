@@ -21,13 +21,11 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node_version }}
-      - name: Debug
-        run: |
-          pwd
-          ls
-      - name: npm ci and test
+      - name: Enable pnpm (via corepack)
+        run: corepack enable
+      - name: Install dependencies and test React app
         working-directory: my-app
         run: |
-          npm ci
-          nom run build --if-present
-          npm test
+          pnpm install
+          pnpm run build --if-present
+          pnpm test
