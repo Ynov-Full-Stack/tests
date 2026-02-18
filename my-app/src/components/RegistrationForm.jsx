@@ -20,9 +20,10 @@ function RegistrationForm() {
 
 
     /**
-     * Sert à valider un champ
+     *
      * @param value
      * @param fieldName
+     * @returns {void}
      */
     const validateField = (value, fieldName) => {
         const updatedForm = { ...form, [fieldName]: value };
@@ -58,7 +59,8 @@ function RegistrationForm() {
 
     /**
      * Gestion des changements, appelé à chaque changement de valeur
-     * @param e
+     *  @param {React.ChangeEvent<HTMLInputElement>} e
+     *  @returns {void}
      */
     const handleChange = (e) => {
         const {name, value} = e.target;
@@ -70,8 +72,8 @@ function RegistrationForm() {
     };
 
     /**
-     * Gestion du blur, appelé à chaque fois que le champ perd le focus
-     * @param e
+     * @param {React.FocusEvent<HTMLInputElement>} e
+     * @returns {void}
      */
     const handleBlur = (e) => {
         const {name, value} = e.target;
@@ -84,8 +86,7 @@ function RegistrationForm() {
      * Valide si :
      * - aucune erreur n'est présente
      * - tous les champs sont remplis
-     *
-     * @type {this is string[]}
+     * @type {boolean}
      */
     const isFormValid =
         Object.values(errors).every((e) => !e) &&
@@ -93,8 +94,8 @@ function RegistrationForm() {
 
 
     /**
-     * Soumission du formulaire
-     * @param e
+     * @param {React.FormEvent<HTMLFormElement>} e
+     * @returns {void}
      */
     const handleSubmit = (e) => {
         e.preventDefault();
