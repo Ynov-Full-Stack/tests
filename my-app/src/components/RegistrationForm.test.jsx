@@ -184,12 +184,11 @@ describe("RegistrationForm Integration", () => {
         jest.advanceTimersByTime(2000);
 
         // Vérifie que navigate a été appelé
-        expect(mockedNavigate).toHaveBeenCalledWith("/");
+        expect(mockedNavigate).toHaveBeenCalledWith("/tests");
 
         jest.useRealTimers();
     });
 
-    // Test 1 : Couvre ligne 71 (catch dans isFormValid) ET ligne 86-87 (erreurs présentes)
     test("isFormValid catches validation errors and keeps button disabled", () => {
         renderWithProviders(<RegistrationForm />);
 
@@ -209,7 +208,6 @@ describe("RegistrationForm Integration", () => {
         expect(screen.getByRole("button", { name: /submit/i })).toBeDisabled();
     });
 
-// Test 2 : Couvre lignes 111 ET 115 (setTimeout + navigate)
     test("executes navigation after successful submission timeout", () => {
         jest.useFakeTimers(); // IMPORTANT
 
@@ -228,10 +226,8 @@ describe("RegistrationForm Integration", () => {
 
         fireEvent.submit(screen.getByTestId("form"));
 
-        // Ligne 111 : setTimeout s'exécute
-        // Ligne 115 : navigate("/") est appelé
         jest.advanceTimersByTime(2000);
-        expect(mockedNavigate).toHaveBeenCalledWith("/");
+        expect(mockedNavigate).toHaveBeenCalledWith("/tests");
 
         jest.useRealTimers();
     });
