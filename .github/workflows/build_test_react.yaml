@@ -78,7 +78,7 @@ jobs:
       - name: Copy docs into build
         run: |
           mkdir -p my-app/build/docs
-          cp -r my-app/public/docs/* my-app/build/docs/
+          cp -r public/docs/* my-app/build/docs/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
