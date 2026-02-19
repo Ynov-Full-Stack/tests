@@ -69,6 +69,11 @@ jobs:
 
       - name: Generate JSDoc
         run: pnpm run jsdoc
+        
+      - name: Debug after JSDoc
+        run: |
+          echo "=== ROOT ==="
+          ls -R .
 
       - name: Copy docs into build
         run: |
