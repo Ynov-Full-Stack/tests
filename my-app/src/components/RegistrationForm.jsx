@@ -1,8 +1,8 @@
-import React, {useState} from "react";
-import {validatePostCode, validateEmail, validateIdentity} from "../validator";
-import {calculateAge} from "../module";
-import {useNavigate} from "react-router-dom";
-
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUsers } from '../context/UserContext';
+import { validatePostCode, validateEmail, validateIdentity } from "../validator";
+import { calculateAge } from "../module";
 
 function RegistrationForm() {
     const [form, setForm] = useState({
@@ -15,29 +15,18 @@ function RegistrationForm() {
     });
 
     const [errors, setErrors] = useState({});
-    //state qui permet de savoir si l'input a été touché
     const [touched, setTouched] = useState({});
     const [success, setSuccess] = useState(false);
+    const { users, setUsers } = useUsers();
     const navigate = useNavigate();
 
-
-    /**
-     *
-     * @param value
-     * @param fieldName
-     * @returns {void}
-     */
     const validateField = (value, fieldName) => {
         const updatedForm = { ...form, [fieldName]: value };
-
         try {
             switch (fieldName) {
                 case "lastname":
                 case "firstname":
-                    validateIdentity(
-                        updatedForm.lastname,
-                        updatedForm.firstname
-                    );
+                    validateIdentity(updatedForm.lastname, updatedForm.firstname);
                     break;
                 case "email":
                     validateEmail(value);
@@ -46,90 +35,60 @@ function RegistrationForm() {
                     validatePostCode(value);
                     break;
                 case "birth":
-                    calculateAge({birth: new Date(value)});
+                    calculateAge({ birth: new Date(value) });
                     break;
                 default:
                     break;
             }
-            // si aucune erreur, on supprime l'erreur du champ
-            setErrors((prevErrors) => ({...prevErrors, [fieldName]: undefined}));
+            setErrors((prevErrors) => ({ ...prevErrors, [fieldName]: undefined }));
         } catch (err) {
-            //sinon on stocke l'erreur dans le state
-            setErrors((prevErrors) => ({...prevErrors, [fieldName]: err.message}));
+            setErrors((prevErrors) => ({ ...prevErrors, [fieldName]: err.message }));
         }
-    }
+    };
 
-    /**
-     * Gestion des changements, appelé à chaque changement de valeur
-     *  @param {React.ChangeEvent<HTMLInputElement>} e
-     *  @returns {void}
-     */
     const handleChange = (e) => {
-        const {name, value} = e.target;
-        setForm({...form, [name]: value});
-
+        const { name, value } = e.target;
+        setForm({ ...form, [name]: value });
         if (touched[name]) {
             validateField(value, name);
         }
     };
 
-    /**
-     * @param {React.FocusEvent<HTMLInputElement>} e
-     * @returns {void}
-     */
     const handleBlur = (e) => {
-        const {name, value} = e.target;
-        setTouched({...touched, [name]: true});
+        const { name, value } = e.target;
+        setTouched({ ...touched, [name]: true });
         validateField(value, name);
-    }
+    };
 
-    /**
-     * Validité du formulaire
-     * Valide si :
-     * - aucune erreur n'est présente
-     * - tous les champs sont remplis
-     * @type {boolean}
-     */
     const isFormValid =
         Object.values(errors).every((e) => !e) &&
         Object.values(form).every((v) => v !== "");
 
-
-    /**
-     * @param {React.FormEvent<HTMLFormElement>} e
-     * @returns {void}
-     */
     const handleSubmit = (e) => {
         e.preventDefault();
-
         const newErrors = {};
-
         try {
             validateIdentity(form.lastname, form.firstname);
         } catch (err) {
             newErrors.firstname = err.message;
             newErrors.lastname = err.message;
         }
-
         try {
             validateEmail(form.email);
         } catch (err) {
             newErrors.email = err.message;
         }
-
         try {
             validatePostCode(form.postalCode);
         } catch (err) {
             newErrors.postalCode = err.message;
         }
-
         try {
             calculateAge({ birth: new Date(form.birth) });
         } catch (err) {
             newErrors.birth = err.message;
         }
 
-        // Marque tout comme touché
         setTouched({
             firstname: true,
             lastname: true,
@@ -143,11 +102,9 @@ function RegistrationForm() {
 
         if (Object.keys(newErrors).length > 0) return;
 
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        users.push(form);
-        localStorage.setItem("users", JSON.stringify(users));
-        setSuccess(true);
+        setUsers([...users, form]);
 
+        setSuccess(true);
         setForm({
             lastname: "",
             firstname: "",
@@ -156,9 +113,7 @@ function RegistrationForm() {
             city: "",
             postalCode: "",
         });
-
         setTouched({});
-
         setTimeout(() => {
             navigate("/");
         }, 2000);
@@ -175,11 +130,7 @@ function RegistrationForm() {
                     <input
                         name={field}
                         type={field === "birth" ? "date" : "text"}
-                        placeholder={
-                            field === "postalCode"
-                                ? "Postal Code"
-                                : field.charAt(0).toUpperCase() + field.slice(1)
-                        }
+                        placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
                         value={form[field]}
                         onChange={handleChange}
                         onBlur={handleBlur}
@@ -189,9 +140,7 @@ function RegistrationForm() {
                         }`}
                     />
                     {errors[field] && (
-                        <p className="text-red-500 text-sm mt-1">
-                            {errors[field]}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors[field]}</p>
                     )}
                 </div>
             ))}
@@ -200,19 +149,13 @@ function RegistrationForm() {
                 type="submit"
                 disabled={!isFormValid}
                 className={`w-full py-2 rounded-lg font-semibold transition ${
-                    isFormValid
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    isFormValid ? "bg-blue-600 text-white" : "bg-gray-400 text-gray-200 cursor-not-allowed"
                 }`}
             >
                 Submit
             </button>
 
-            {success && (
-                <div className="bg-green-500 text-white p-2 rounded">
-                    User saved successfully!
-                </div>
-            )}
+            {success && <div className="bg-green-500 text-white p-2 rounded">User saved successfully!</div>}
         </form>
     );
 }

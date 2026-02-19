@@ -2,36 +2,39 @@ import './App.css';
 import RegistrationForm from "./components/RegistrationForm";
 import {BrowserRouter as Router, Link, Route, Routes} from "react-router-dom";
 import Homepage from "./Homepage";
+import {UserProvider} from "./context/UserContext";
 
 function App() {
     return (
-        <Router>
-            <div>
-                <nav>
-                    <ul>
-                        <li>
-                            <Link to="/">Accueil</Link>
-                        </li>
-                        <li>
-                            <Link to="/register">Inscription</Link>
-                        </li>
-                       {/* <li>
+        <UserProvider>
+            <Router>
+                <div>
+                    <nav>
+                        <ul>
+                            <li>
+                                <Link to="/">Accueil</Link>
+                            </li>
+                            <li>
+                                <Link to="/register">Inscription</Link>
+                            </li>
+                            {/* <li>
                             <Link to="/users">Users</Link>
                         </li>*/}
-                    </ul>
-                </nav>
+                        </ul>
+                    </nav>
 
-                <Routes>
-                    <Route path="/" element={<Homepage />} />
-                    <Route path="/register" element={<RegistrationForm />} />
+                    <Routes>
+                        <Route path="/" element={<Homepage/>}/>
+                        <Route path="/register" element={<RegistrationForm/>}/>
 
-                    {/*     <Route path="/users">
+                        {/*     <Route path="/users">
                         <Users />
                     </Route>*/}
-                </Routes>
+                    </Routes>
 
-            </div>
-        </Router>
+                </div>
+            </Router>
+        </UserProvider>
     )
 }
 
