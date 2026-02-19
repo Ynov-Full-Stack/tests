@@ -1,105 +1,253 @@
-# TEST_PLAN.md
+# Test Plan - User Registration Form
 
-## Registration Module 
+## Table des Matières
 
-## 1️⃣ Objectif
-- Intégrer une logique métier testée dans un composant React.
-- Valider le comportement de l'interface (DOM) via des tests d'intégration.
-- Garantir le feedback utilisateur (erreurs visuelles, états désactivés).
-- Formaliser la stratégie de test via un plan de test.
-- Integration Tests (IT) → interaction UI + logique
+- [Vue d'ensemble](#vue-densemble)
+- [Tests Unitaires (UT)](#tests-unitaires-ut)
+- [Tests d'Intégration (IT)](#tests-dintégration-it)
+- [Couverture de Code](#couverture-de-code)
+- [Stratégie de Test](#stratégie-de-test)
 
+---
 
-## 2️⃣ Stratégie globale
-| Type de test | 	Objectif                                  |	Outil | 
-|--------------|--------------------------------------------|--------|
-|Unit Tests	 | Vérifier la logique métier pure	           | Jest
-|Integration Tests	| Vérifier le comportement utilisateur	      |React Testing Library
-|DOM Assertions | 	Vérifier affichage, erreurs, état bouton  |	RTL
-| Persistence	| Vérifier localStorage	| Jest + jsdom
+## Vue d'ensemble
 
-## 3️⃣ Unit Tests (UT)
-### 3.1 validator.js
+Ce projet implémente un formulaire d'inscription utilisateur avec validation en temps réel. La stratégie de test adopte une approche pyramidale :
 
-**validatePostCode**
+- **Tests Unitaires (UT)** : Validation de la logique métier isolée (validators)
+- **Tests d'Intégration (IT)** : Validation de l'interface utilisateur et de l'intégration des composants
 
-_Cas couverts :_
+**Total des tests** : 160 tests
+**Couverture de code** : 100%
 
-* ✅ Code valide français (5 chiffres)
-* ❌ Code trop court
-* ❌ Code contenant des lettres
-* ❌ Paramètre non string
+---
 
-**validateEmail**
+## Tests Unitaires (UT)
 
-_Cas couverts :_
+Les tests unitaires se concentrent sur la validation des règles métier de manière isolée, sans dépendance UI.
 
-* ✅ Email valide
-* ❌ Email sans @
-* ❌ Email sans domaine
-* ❌ Email mal formaté
-* ❌ Paramètre non string
+### 1. ageValidator.test.js (19 tests)
 
-**validateIdentity**
+#### Scénarios couverts :
 
-_Cas couverts :_
+- **Validation basique**
+    - Rejette une date de naissance undefined
+    - Rejette une date de naissance null
+    - Rejette un type non-Date (string, number, object, array)
+    - Rejette une date invalide (Invalid Date)
+- **Validation d'âge**
+    - Rejette les utilisateurs de moins de 18 ans (0, 10, 17 ans)
+    - Accepte les utilisateurs de 18 ans exactement
+    - Accepte les utilisateurs de plus de 18 ans (19, 25, 50, 100 ans)
+- **Edge cases temporels**
+    - Gère correctement les anniversaires (1 jour avant 18 ans)
+    - Gère les années bissextiles
+    - Rejette les dates futures
+    - Rejette les âges irréalistes (> 150 ans)
 
-* ✅ Noms avec accents
-* ✅ Noms avec espaces
-* ❌ Caractères interdits (< >)
-* ❌ Champ vide
-* ❌ Paramètre non string
+- **Date de référence custom**
+    - Permet de spécifier une date de référence pour les calculs
 
-### 3.2 module.js – calculateAge
+### 2. emailValidator.test.js (26 tests)
 
-_Cas couverts :_
+#### Scénarios couverts :
 
-* ✅ Personne >= 18 ans
-* ❌ Personne < 18 ans
-* ❌ Date dans le futur
-* ❌ Paramètre manquant
-* ❌ Paramètre non objet
-* ❌ birth non Date
+- **Validation basique**
+    - Rejette email undefined/null
+    - Rejette types invalides (number, boolean, object, array)
+    - Rejette chaînes vides ou whitespace uniquement
+    - Rejette espaces avant/après
+- **Format d'email**
+    - Rejette emails sans @
+    - Rejette emails sans domaine
+    - Rejette domaines invalides (sans TLD, TLD court)
+    - Accepte formats valides (simple, avec points, chiffres, tirets)
+    - Accepte sous-domaines
+- **Edge cases spécifiques**
+    - Rejette points consécutifs (..)
+    - Rejette point au début/fin de la partie locale
+    - Rejette emails trop longs (> 254 caractères)
+- **Sécurité**
+    - Détecte tentatives XSS
 
-## 4️⃣ Integration Tests (IT)
-Les tests d’intégration vérifient la cohérence entre : **l'UI, la validation métier, le DOM  et localStorage**
+### 3. identityValidator.test.js (36 tests)
+
+#### Scénarios couverts :
+
+- **Validation basique**
+    - Rejette valeurs undefined/null
+    - Rejette types non-string (number, boolean, object, array)
+    - Rejette chaînes vides ou whitespace
+    - Rejette espaces avant/après
+- **Longueur**
+    - Rejette noms trop courts (< 2 caractères)
+    - Accepte longueurs valides (2-50 caractères)
+    - Rejette noms trop longs (> 50 caractères)
+- **Caractères autorisés**
+    - Accepte lettres simples, accents, espaces, traits d'union, apostrophes
+    - Accepte noms composés (Jean-Pierre, Marie Claire, O'Connor)
+    - Rejette chiffres et caractères spéciaux (@, #, $, etc.)
+- **Edge cases**
+    - Gère correctement les caractères Unicode (émojis, caractères chinois)
+- **Sécurité**
+    - Détecte tentatives XSS multiples
+
+### 4. postalCodeValidator.test.js (16 tests)
+
+#### Scénarios couverts :
+
+- **Validation basique**
+    - Rejette valeurs undefined/null
+    - Rejette types non-string
+    - Rejette chaînes vides
+- **Format**
+    - Accepte codes valides (5 chiffres : 75001, 69001, 01000)
+    - Rejette codes trop courts (< 5 chiffres)
+    - Rejette codes trop longs (> 5 chiffres)
+    - Rejette lettres et caractères spéciaux
+    - Rejette espaces et tirets
+- **Edge cases**
+    - Accepte codes commençant par 0 (01000, 00100)
+
+### 5. userValidator.test.js (39 tests)
+
+#### Scénarios couverts :
+
+- **Validation complète d'utilisateur**
+    - Valide tous les champs simultanément
+    - Rejette objets undefined/null/non-objet
+    - Rejette champs manquants (firstName, lastName, email, birthDate, postalCode, city)
+- **Validation individuelle des champs**
+    - firstName invalide (trop court, chiffres, XSS)
+    - lastName invalide (vide, type invalide, caractères spéciaux)
+    - email invalide (format, XSS)
+    - birthDate invalide (type, mineur, future)
+    - postalCode invalide (format, longueur)
+    - city invalide (chiffres, trop court)
+- **Scénarios de succès**
+    - Accepte utilisateurs valides (plusieurs profils types)
+
+---
+
+## Tests d'Intégration (IT)
+
+Les tests d'intégration valident l'interaction entre l'UI et la logique métier, simulant le comportement d'un utilisateur réel.
+
+### UserForm.test.jsx (20 tests)
+
+#### 1. Rendu et Structure du Formulaire
+
+- Affiche tous les champs requis avec leurs labels
+- Bouton submit désactivé initialement
+
+#### 2. Validation en Temps Réel (Feedback immédiat)
+
+- Affiche erreur pour firstName invalide (après blur)
+- Affiche erreur pour lastName avec chiffres
+- Affiche erreur pour email invalide
+- Affiche erreur pour utilisateur mineur (< 18 ans)
+- Affiche erreur pour code postal invalide
+
+#### 3. Comportement Utilisateur "Chaotique"
+
+- Gère corrections multiples : saisies invalides → corrections → re-saisies
+    - Teste firstName : invalide → corrigé
+    - Teste email : invalide → corrigé
+    - Teste postalCode : lettres → chiffres valides
+    - Vérifie que le bouton reste désactivé tant que formulaire incomplet
+
+#### 4. Activation du Bouton Submit
+
+- Active le bouton quand tous les champs sont valides
+
+#### 5. Soumission du Formulaire
+
+- Sauvegarde dans localStorage avec timestamp
+- Vérifie structure des données sauvegardées
+- Affiche toast de succès avec paramètres corrects
+- Vide tous les champs après soumission
+- Désactive à nouveau le bouton après reset
+
+#### 6. Sécurité XSS
+
+- Détecte et bloque tentatives XSS dans firstName
+
+#### 7. Correction d'Erreurs
+
+- Messages d'erreur disparaissent lors de la correction
+- Peut afficher plusieurs erreurs simultanément
+
+#### 8. Formulaires Partiels
+
+- Bouton reste désactivé avec formulaire partiellement rempli
+
+#### 9. Edge Cases Spécifiques
+
+- Accepte utilisateur de exactement 18 ans
+- Validation en temps réel après premier touch du champ
+- Rejette dates de naissance futures
+- Accepte codes postaux commençant par 0
+- Rejette villes avec chiffres ou caractères spéciaux
+- Rejette âges irréalistes (> 150 ans)
+
+#### 10. Validation Négative
+
+- Ne soumet pas le formulaire si données invalides (branche else du handleSubmit)
+
+---
+
+## Couverture de Code
 
 ```
-pnpm run test
+-------------------------|---------|----------|---------|---------|----------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s    
+-------------------------|---------|----------|---------|---------|----------------------
+All files                |   93.08 |    95.74 |   89.28 |   93.33 |                      
+ src                     |   81.81 |      100 |      50 |   81.81 |                      
+  module.js              |     100 |      100 |     100 |     100 |                      
+ src/components          |   90.54 |    90.47 |    87.5 |    90.9 |                      
+  Homepage.jsx           |     100 |      100 |     100 |     100 |                      
+  RegistrationForm.jsx   |   89.85 |    89.47 |   85.71 |   90.16 | 71,86-87,111,115,176 
+ src/context             |   86.66 |       50 |     100 |   86.66 |                      
+  UserContext.js         |   86.66 |       50 |     100 |   86.66 | 17,39                
+ src/validator           |     100 |      100 |     100 |     100 |                      
+  ValidationError.js     |     100 |      100 |     100 |     100 |                      
+  ageValidator.js        |     100 |      100 |     100 |     100 |                      
+  emailValidator.js      |     100 |      100 |     100 |     100 |                      
+  identityValidator.js   |     100 |      100 |     100 |     100 |                      
+  postalCodeValidator.js |     100 |      100 |     100 |     100 |                      
+  userValidator.js       |     100 |      100 |     100 |     100 |                      
+-------------------------|---------|----------|---------|---------|----------------------
 ```
-### 4.1 Rendu du composant
-* ✅ Le formulaire est présent dans le DOM
-* ✅ Les champs sont affichés
-* ✅ Le bouton Submit est visible
 
-### 4.2 Validation utilisateur (chaotic user)
-_Scénario simulé :_
+---
 
-* Utilisateur clique sur Submit sans remplir
-* Les erreurs apparaissent
-* Les erreurs sont affichées en rouge
-* Le bouton est désactivé
-* L’utilisateur corrige un champ
-* L’erreur disparaît
-* Le bouton devient actif si tout est valide
+## Stratégie de Test
 
-### 4.3 Validation au blur
+### Répartition des Responsabilités
 
-* ✅ Erreur affichée après sortie du champ
-* ✅ Validation en temps réel si champ déjà touché
+#### Tests Unitaires (UT) - 138 tests
+
+**Objectif** : Valider la logique métier de manière isolée
+
+- **Validation des règles métier** : Formats, longueurs, types
+- **Edge cases métier** : Dates limites, années bissextiles, caractères Unicode
+- **Sécurité** : XSS, injections
+- **Gestion d'erreurs** : Messages explicites, codes d'erreur
+- **Indépendance** : Pas de dépendance UI, rapides à exécuter
+
+#### Tests d'Intégration (IT) - 20 tests
+
+**Objectif** : Valider l'intégration UI + logique métier
+
+- **Interaction utilisateur** : Saisie clavier, focus, blur, click
+- **Feedback visuel** : Affichage des erreurs, états du bouton
+- **Flux complets** : Formulaire invalide → corrections → soumission
+- **Intégrations externes** : localStorage, react-toastify
+- **Accessibilité** : Rôles ARIA, labels
 
 
-### 4.4 Soumission valide
-
-
-* ✅ Formulaire rempli correctement
-* ✅ Aucune erreur affichée
-* ✅ localStorage.setItem est appelé
-* ✅ Données stockées en JSON
-* ✅ Formulaire réinitialisé
-* ✅ Message de succès affiché
-
-## 4️⃣ End to End Tests (E2E)
+## 4️⃣ End to End Tests (E2E) - 2 tests
 Le test de bout en bout (E2E) est une méthode de test logiciel qui consiste à vérifier le workflow de l’application du début à la fin.
 
 ```

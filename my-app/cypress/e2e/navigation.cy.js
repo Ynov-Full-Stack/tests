@@ -45,7 +45,7 @@ describe('Test Navigation', () => {
 
         cy.get('button[type="submit"]').should('be.disabled');
 
-        cy.contains('email must be a valid email address')
+        cy.contains('Email address must be in a valid format (example@domain.com)')
             .should('be.visible');
 
         cy.contains('Accueil').click();

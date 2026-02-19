@@ -5,8 +5,6 @@ import {
     validatePostCode,
     validateEmail,
     validateIdentity,
-    validateLastname,
-    validateFirstname
 } from "../validator";
 import { calculateAge } from "../module";
 
@@ -20,100 +18,116 @@ function RegistrationForm() {
         postalCode: "",
     });
 
-    const [errors, setErrors] = useState({});
-    const [touched, setTouched] = useState({});
+    const [errors, setErrors] = useState({
+        lastname: "",
+        firstname: "",
+        email: "",
+        birth: "",
+        city: "",
+        postalCode: "",
+    });
+
+    const [touched, setTouched] = useState({
+        lastname: false,
+        firstname: false,
+        email: false,
+        birth: false,
+        city: false,
+        postalCode: false,
+    });
+
     const [success, setSuccess] = useState(false);
     const { users, setUsers } = useUsers();
     const navigate = useNavigate();
 
-    const validateField = (value, fieldName) => {
+    /**
+     * Validation d'un champ individuel avec les 3 fonctions importées
+     */
+    const validateField = (fieldName, value) => {
+        // TOUS les champs vides → erreur explicite
+        if (!value || value.trim() === "") {
+            return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(0)} must not be empty`;
+        }
+
         try {
             switch (fieldName) {
                 case "firstname":
-                    validateFirstname(value);
-                    break;
                 case "lastname":
-                    validateLastname(value);
-                    break;
+                    validateIdentity(value, value);
+                    return "";
                 case "email":
                     validateEmail(value);
-                    break;
+                    return "";
                 case "postalCode":
                     validatePostCode(value);
-                    break;
+                    return "";
                 case "birth":
                     calculateAge({ birth: new Date(value) });
-                    break;
+                    return "";
                 case "city":
-                    if (!value || value.trim() === "") {
-                        throw new Error("City cannot be empty");
-                    }
-                    break;
+                    validateIdentity(value, value);
+                    return "";
                 default:
-                    break;
+                    return "";
             }
-
-            setErrors((prev) => ({ ...prev, [fieldName]: undefined }));
         } catch (err) {
-            setErrors((prev) => ({ ...prev, [fieldName]: err.message }));
+            return err.message;
         }
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-
         setForm((prev) => ({
             ...prev,
             [name]: value || "",
         }));
 
-        // on valide systématiquement à chaque changement
-        validateField(value, name);
+        if (touched[name]) {
+            const errorMessage = validateField(name, value);
+            setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+        }
     };
 
     const handleBlur = (e) => {
-        const { name } = e.target;
+        const { name, value } = e.target;
         setTouched((prev) => ({ ...prev, [name]: true }));
+        const errorMessage = validateField(name, value);
+        setErrors((prev) => ({ ...prev, [name]: errorMessage }));
     };
 
-    const isFormValid =
-        Object.values(errors).every((e) => !e) &&
-        Object.values(form).every((v) => v !== "");
+    /**
+     * Formulaire globalement valide avec les 3 fonctions
+     */
+    const isFormValid = () => {
+        const allFilled = Object.values(form).every((v) => v.trim() !== "");
+        if (!allFilled) return false;
+
+        try {
+            validateIdentity(form.firstname, form.lastname);
+            validateEmail(form.email);
+            validatePostCode(form.postalCode);
+            calculateAge({ birth: new Date(form.birth) });
+            if (!form.city || form.city.trim() === "") {
+                return false;
+            }
+            return true;
+        } catch {
+            return false;
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newErrors = {};
 
-        try {
-            // ordre: lastname, firstname
-            validateIdentity(form.lastname, form.firstname);
-        } catch (err) {
-            // pour rester simple, même message sur les deux champs
-            newErrors.firstname = err.message;
-            newErrors.lastname = err.message;
-        }
-
-        try {
-            validateEmail(form.email);
-        } catch (err) {
-            newErrors.email = err.message;
-        }
-
-        try {
-            validatePostCode(form.postalCode);
-        } catch (err) {
-            newErrors.postalCode = err.message;
-        }
-
-        try {
-            calculateAge({ birth: new Date(form.birth) });
-        } catch (err) {
-            newErrors.birth = err.message;
-        }
-
-        if (!form.city || form.city.trim() === "") {
-            newErrors.city = "City cannot be empty";
-        }
+        // Validation complète de tous les champs
+        const newErrors = {
+            firstname: validateField("firstname", form.firstname),
+            lastname: validateField("lastname", form.lastname),
+            email: validateField("email", form.email),
+            birth: validateField("birth", form.birth),
+            city: validateField("city", form.city),
+            postalCode: validateField("postalCode", form.postalCode),
+        };
 
         setTouched({
             firstname: true,
@@ -126,11 +140,13 @@ function RegistrationForm() {
 
         setErrors(newErrors);
 
-        if (Object.keys(newErrors).length > 0) return;
+        if (Object.values(newErrors).some((msg) => msg)) return;
 
+        // Succès : sauvegarde
         setUsers([...users, form]);
-
         setSuccess(true);
+
+        // Reset
         setForm({
             lastname: "",
             firstname: "",
@@ -139,7 +155,23 @@ function RegistrationForm() {
             city: "",
             postalCode: "",
         });
-        setTouched({});
+        setErrors({
+            lastname: "",
+            firstname: "",
+            email: "",
+            birth: "",
+            city: "",
+            postalCode: "",
+        });
+        setTouched({
+            lastname: false,
+            firstname: false,
+            email: false,
+            birth: false,
+            city: false,
+            postalCode: false,
+        });
+
         setTimeout(() => {
             navigate("/");
         }, 2000);
@@ -175,9 +207,11 @@ function RegistrationForm() {
 
             <button
                 type="submit"
-                disabled={!isFormValid}
+                disabled={!isFormValid()}
                 className={`w-full py-2 rounded-lg font-semibold transition ${
-                    isFormValid ? "bg-blue-600 text-white" : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                    isFormValid()
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
                 }`}
             >
                 Submit
