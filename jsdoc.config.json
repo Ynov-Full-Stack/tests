@@ -3,7 +3,7 @@
         "include": ["./my-app/src"]
     },
     "opts": {
-        "destination": "./public/docs",
+        "destination": "./my-app/public/docs",
         "recurse": true,
         "readme": "./my-app/README.md"
     }
