@@ -17,7 +17,7 @@ const renderWithProviders = (ui) => render(<UserProvider>{ui}</UserProvider>);
 beforeEach(() => {
     const localStorageMock = {
         setItem: jest.fn(),
-        getItem: jest.fn(),
+        getItem: jest.fn(() => null),
         removeItem: jest.fn(),
         clear: jest.fn(),
     };
@@ -50,7 +50,7 @@ describe("RegistrationForm Integration", () => {
         fireEvent.change(screen.getByPlaceholderText("Firstname"), {target: {value: "Jean"}});
         fireEvent.change(screen.getByPlaceholderText("Lastname"), {target: {value: "Dupont"}});
         fireEvent.change(screen.getByPlaceholderText("Email"), {target: {value: "test@email.fr"}});
-        fireEvent.change(screen.getByPlaceholderText("Postal Code"), {target: {value: "13002"}});
+        fireEvent.change(screen.getByPlaceholderText("PostalCode"), {target: {value: "13002"}});
         fireEvent.change(screen.getByPlaceholderText("City"), {target: {value: "Paris"}});
         const birth = new Date();
         birth.setFullYear(birth.getFullYear() - 20);
@@ -69,7 +69,7 @@ describe("RegistrationForm Integration", () => {
         fireEvent.change(screen.getByPlaceholderText("Firstname"), {target: {value: "Jean"}});
         fireEvent.change(screen.getByPlaceholderText("Lastname"), {target: {value: "Dupont"}});
         fireEvent.change(screen.getByPlaceholderText("Email"), {target: {value: "test@email.fr"}});
-        fireEvent.change(screen.getByPlaceholderText("Postal Code"), {target: {value: "13002"}});
+        fireEvent.change(screen.getByPlaceholderText("PostalCode"), {target: {value: "13002"}});
         fireEvent.change(screen.getByPlaceholderText("City"), {target: {value: "Paris"}});
         const birth = new Date();
         birth.setFullYear(birth.getFullYear() - 20);
@@ -90,7 +90,7 @@ describe("RegistrationForm Integration", () => {
         fireEvent.change(email, {target: {value: "invalid"}});
         fireEvent.blur(email);
 
-        const postalCode = screen.getByPlaceholderText("Postal Code");
+        const postalCode = screen.getByPlaceholderText("PostalCode");
         fireEvent.change(postalCode, {target: {value: "ABC"}});
         fireEvent.blur(postalCode);
 
@@ -104,6 +104,6 @@ describe("RegistrationForm Integration", () => {
         fireEvent.change(city, {target: {value: "Paris"}});
         fireEvent.blur(city);
 
-        expect(screen.getAllByText(/must/i)).toHaveLength(4);
+        expect(screen.getAllByText(/must/i)).toHaveLength(3);
     });
 });

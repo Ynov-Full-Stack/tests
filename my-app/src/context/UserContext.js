@@ -10,8 +10,12 @@ const UserContext = createContext();
  */
 export const UserProvider = ({ children }) => {
     const [users, setUsers] = useState(() => {
-        const storedUsers = JSON.parse(localStorage.getItem("users"));
-        return storedUsers || [];
+        const storedUsers = localStorage.getItem("users");
+        try {
+            return storedUsers ? JSON.parse(storedUsers) : [];
+        } catch {
+            return [];
+        }
     });
 
     useEffect(() => {
