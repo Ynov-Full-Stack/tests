@@ -1,5 +1,5 @@
 import React from 'react';
-import { useUsers } from './context/UserContext';
+import { useUsers } from '../context/UserContext';
 
 function Homepage() {
     const { users } = useUsers();

@@ -1,12 +1,11 @@
 import {validateEmail, validatePostCode, validateIdentity} from "./validator";
 
 /**
- *  @function validatePostCode
+ * @function validatePostCode
  */
 describe('validatePostCode Test Suites', () => {
     it('should have the correct format', () => {
-        const code = '13002'
-
+        const code = '13002';
         expect(validatePostCode(code)).toBe(true);
     });
 
@@ -28,40 +27,34 @@ describe('validatePostCode Test Suites', () => {
  */
 describe('validateEmail Test Suites', () => {
     it('should have the correct email format', () => {
-        const email = 'email@email.fr'
+        const email = 'email@email.fr';
         expect(validateEmail(email)).toBe(true);
-    })
+    });
+
     it('should throw an error for an invalid email format', () => {
         expect(() => validateEmail('emailemail.fr'))
             .toThrow('email must be a valid email address');
-
         expect(() => validateEmail('email@'))
             .toThrow('email must be a valid email address');
-
         expect(() => validateEmail('email@email'))
             .toThrow('email must be a valid email address');
-
         expect(() => validateEmail(''))
             .toThrow('email must be a valid email address');
     });
 
     it('should throw an error if email is not a string', () => {
-        expect(() => validateEmail(null))
-            .toThrow('email must be a string');
-
-        expect(() => validateEmail(123))
-            .toThrow('email must be a string');
+        expect(() => validateEmail(null)).toThrow('email must be a string');
+        expect(() => validateEmail(123)).toThrow('email must be a string');
     });
-})
+});
 
 /**
  * @function validateIdentity
  */
 describe('validateIdentity Test Suites', () => {
-
     it('should return true for a valid identity', () => {
         expect(validateIdentity('Dupont', 'Jean')).toBe(true);
-        expect(validateIdentity('D’Amboise', 'Élodie')).toBe(true);
+        expect(validateIdentity('D\'Amboise', 'Élodie')).toBe(true);
         expect(validateIdentity('Jean-Pierre', 'Marie-Claire')).toBe(true);
         expect(validateIdentity('Jean-Pierre', 'Dupont')).toBe(true);
         expect(validateIdentity('Marie Claire', 'Françoise')).toBe(true);
@@ -70,14 +63,14 @@ describe('validateIdentity Test Suites', () => {
 
     it('should throw an error for invalid lastname', () => {
         expect(() => validateIdentity('Dupont3', 'Jean'))
-            .toThrow('lastname must contain only letters, accents, spaces or hyphens');
+            .toThrow('lastname must only contain letters, accents, spaces or hyphens');
         expect(() => validateIdentity('<script>', 'Jean'))
             .toThrow('lastname contains forbidden characters');
     });
 
     it('should throw an error for invalid firstname', () => {
         expect(() => validateIdentity('Dupont', 'Jean3'))
-            .toThrow('firstname must contain only letters, accents, spaces or hyphens');
+            .toThrow('firstname must only contain letters, accents, spaces or hyphens');
         expect(() => validateIdentity('Dupont', '<script>'))
             .toThrow('firstname contains forbidden characters');
     });
@@ -88,5 +81,4 @@ describe('validateIdentity Test Suites', () => {
         expect(() => validateIdentity('Dupont', null))
             .toThrow('firstname must be a string');
     });
-
 });

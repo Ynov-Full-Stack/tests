@@ -1,4 +1,3 @@
-// RegistrationForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../context/UserContext";
@@ -46,7 +45,6 @@ function RegistrationForm() {
                     calculateAge({ birth: new Date(value) });
                     break;
                 case "city":
-                    // ici tu peux ajouter une vraie validation si tu veux
                     if (!value || value.trim() === "") {
                         throw new Error("City cannot be empty");
                     }
@@ -113,7 +111,6 @@ function RegistrationForm() {
             newErrors.birth = err.message;
         }
 
-        // city obligatoire simple
         if (!form.city || form.city.trim() === "") {
             newErrors.city = "City cannot be empty";
         }

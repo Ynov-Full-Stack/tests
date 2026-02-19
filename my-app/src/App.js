@@ -1,7 +1,7 @@
 import './App.css';
 import RegistrationForm from "./components/RegistrationForm";
-import {BrowserRouter as Router, Link, Route, Routes} from "react-router-dom";
-import Homepage from "./Homepage";
+import {BrowserRouter as Router, Link, Route, Routes} from 'react-router-dom';
+import Homepage from "./components/Homepage";
 import {UserProvider} from "./context/UserContext";
 
 function App() {
