@@ -1,7 +1,7 @@
 describe('Test Navigation', () => {
 
     beforeEach(() => {
-        cy.visit('/');
+        cy.visit('http://localhost:3000/tests');
 
         // Etat initial
         cy.contains('0 utilisateur inscrit');
@@ -20,7 +20,7 @@ describe('Test Navigation', () => {
         cy.get('button[type="submit"]').click();
 
         // Vérifier retour accueil
-        cy.url().should('eq', 'http://localhost:3000/');
+        cy.url().should('eq', 'http://localhost:3000/tests');
         cy.contains('1 utilisateur inscrit');
     });
 

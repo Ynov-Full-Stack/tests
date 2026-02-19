@@ -173,7 +173,7 @@ function RegistrationForm() {
         });
 
         setTimeout(() => {
-            navigate("/");
+            navigate("/tests");
         }, 2000);
     };
 
