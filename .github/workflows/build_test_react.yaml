@@ -40,7 +40,19 @@ jobs:
         run: pnpm install
 
       - name: Run React tests
-        run: pnpm --filter my-app test
+        run: pnpm test
+        working-directory: my-app
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: my-app
+          build: pnpm build
+          start: pnpm start
+
+      - name: Build React app for Pages
+        run: pnpm build
+        working-directory: my-app
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -55,16 +67,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: my-app/coverage
 
-      - name: Build React app
-        run: pnpm --filter my-app build
-
       - name: Generate JSDoc
         run: pnpm run jsdoc
 
       - name: Copy docs into build
         run: |
           mkdir -p my-app/build/docs
-          cp -r public/docs/* my-app/build/docs/
+          cp -r my-app/public/docs/* my-app/build/docs/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
