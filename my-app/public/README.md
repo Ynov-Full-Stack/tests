@@ -64,6 +64,9 @@ _Cas couverts :_
 ## 4️⃣ Integration Tests (IT)
 Les tests d’intégration vérifient la cohérence entre : **l'UI, la validation métier, le DOM  et localStorage**
 
+```
+pnpm run test
+```
 ### 4.1 Rendu du composant
 * ✅ Le formulaire est présent dans le DOM
 * ✅ Les champs sont affichés
@@ -95,3 +98,24 @@ _Scénario simulé :_
 * ✅ Données stockées en JSON
 * ✅ Formulaire réinitialisé
 * ✅ Message de succès affiché
+
+## 4️⃣ End to End Tests (E2E)
+Le test de bout en bout (E2E) est une méthode de test logiciel qui consiste à vérifier le workflow de l’application du début à la fin.
+
+```
+pnpm run cypress:open
+```
+_Scénarios testés :_
+
+**Inscription d’un utilisateur valide**
+* Remplissage du formulaire
+* Soumission réussie
+* Redirection vers la page d’accueil
+* Vérification de l’affichage des informations
+
+**Tentative d’inscription invalide**
+* Email invalide
+* Bouton de soumission désactivé
+* Affichage du message d’erreur
+* Vérification que l’utilisateur invalide n’est pas ajouté
+
