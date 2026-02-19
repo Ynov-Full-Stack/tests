@@ -1,7 +1,14 @@
+// RegistrationForm.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUsers } from '../context/UserContext';
-import { validatePostCode, validateEmail, validateIdentity } from "../validator";
+import { useUsers } from "../context/UserContext";
+import {
+    validatePostCode,
+    validateEmail,
+    validateIdentity,
+    validateLastname,
+    validateFirstname
+} from "../validator";
 import { calculateAge } from "../module";
 
 function RegistrationForm() {
@@ -21,12 +28,13 @@ function RegistrationForm() {
     const navigate = useNavigate();
 
     const validateField = (value, fieldName) => {
-        const updatedForm = { ...form, [fieldName]: value };
         try {
             switch (fieldName) {
-                case "lastname":
                 case "firstname":
-                    validateIdentity(updatedForm.lastname, updatedForm.firstname);
+                    validateFirstname(value);
+                    break;
+                case "lastname":
+                    validateLastname(value);
                     break;
                 case "email":
                     validateEmail(value);
@@ -37,27 +45,37 @@ function RegistrationForm() {
                 case "birth":
                     calculateAge({ birth: new Date(value) });
                     break;
+                case "city":
+                    // ici tu peux ajouter une vraie validation si tu veux
+                    if (!value || value.trim() === "") {
+                        throw new Error("City cannot be empty");
+                    }
+                    break;
                 default:
                     break;
             }
-            setErrors((prevErrors) => ({ ...prevErrors, [fieldName]: undefined }));
+
+            setErrors((prev) => ({ ...prev, [fieldName]: undefined }));
         } catch (err) {
-            setErrors((prevErrors) => ({ ...prevErrors, [fieldName]: err.message }));
+            setErrors((prev) => ({ ...prev, [fieldName]: err.message }));
         }
     };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
-        if (touched[name]) {
-            validateField(value, name);
-        }
+
+        setForm((prev) => ({
+            ...prev,
+            [name]: value || "",
+        }));
+
+        // on valide systématiquement à chaque changement
+        validateField(value, name);
     };
 
     const handleBlur = (e) => {
-        const { name, value } = e.target;
-        setTouched({ ...touched, [name]: true });
-        validateField(value, name);
+        const { name } = e.target;
+        setTouched((prev) => ({ ...prev, [name]: true }));
     };
 
     const isFormValid =
@@ -67,26 +85,37 @@ function RegistrationForm() {
     const handleSubmit = (e) => {
         e.preventDefault();
         const newErrors = {};
+
         try {
+            // ordre: lastname, firstname
             validateIdentity(form.lastname, form.firstname);
         } catch (err) {
+            // pour rester simple, même message sur les deux champs
             newErrors.firstname = err.message;
             newErrors.lastname = err.message;
         }
+
         try {
             validateEmail(form.email);
         } catch (err) {
             newErrors.email = err.message;
         }
+
         try {
             validatePostCode(form.postalCode);
         } catch (err) {
             newErrors.postalCode = err.message;
         }
+
         try {
             calculateAge({ birth: new Date(form.birth) });
         } catch (err) {
             newErrors.birth = err.message;
+        }
+
+        // city obligatoire simple
+        if (!form.city || form.city.trim() === "") {
+            newErrors.city = "City cannot be empty";
         }
 
         setTouched({
@@ -136,10 +165,12 @@ function RegistrationForm() {
                         onBlur={handleBlur}
                         data-testid={field === "birth" ? "birth" : undefined}
                         className={`w-full px-4 py-2 border rounded-lg ${
-                            errors[field] ? "border-red-500" : "border-gray-300"
+                            errors[field] && touched[field]
+                                ? "border-red-500"
+                                : "border-gray-300"
                         }`}
                     />
-                    {errors[field] && (
+                    {errors[field] && touched[field] && (
                         <p className="text-red-500 text-sm mt-1">{errors[field]}</p>
                     )}
                 </div>
@@ -155,7 +186,11 @@ function RegistrationForm() {
                 Submit
             </button>
 
-            {success && <div className="bg-green-500 text-white p-2 rounded">User saved successfully!</div>}
+            {success && (
+                <div className="bg-green-500 text-white p-2 rounded">
+                    User saved successfully!
+                </div>
+            )}
         </form>
     );
 }

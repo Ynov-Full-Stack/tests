@@ -1,3 +1,33 @@
+// validator.js
+
+/**
+ * Valide un champ de type nom/prénom
+ * @param {string} value
+ * @param {string} fieldLabel "Lastname" ou "Firstname"
+ * @returns {boolean}
+ */
+function validateNameField(value, fieldLabel) {
+    if (value === undefined || value === null) {
+        throw new Error(`${fieldLabel.toLowerCase()} must be a string`);
+    }
+
+    if (typeof value !== 'string') {
+        throw new Error(`${fieldLabel.toLowerCase()} must be a string`);
+    }
+
+    if (/[<>]/.test(value)) {
+        throw new Error(`${fieldLabel.toLowerCase()} contains forbidden characters`);
+    }
+
+    const regex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/;
+
+    if (!regex.test(value.trim()) || value.trim() === '') {
+        throw new Error(`${fieldLabel.toLowerCase()} must only contain letters, accents, spaces or hyphens`);
+    }
+
+    return true;
+}
+
 /**
  * Validate postal code
  * @param {string} code A string representing a postal code
@@ -5,10 +35,10 @@
  */
 function validatePostCode(code) {
     if (typeof code !== 'string') {
-        throw new Error('post code must be a string')
+        throw new Error('post code must be a string');
     }
     if (!/^[0-9]{5}$/.test(code)) {
-        throw new Error('post code must be a string with five digits')
+        throw new Error('post code must be a string with five digits');
     }
 
     return true;
@@ -35,35 +65,39 @@ function validateEmail(email) {
 
 /**
  * Validate identity: lastname + firstname
- * @param {string} lastname A string representing a lastname
- * @param {string} firstname A string representing a firstname
+ * Utilisée par tes tests unitaires
+ * @param {string} lastname
+ * @param {string} firstname
  * @returns {boolean}
  */
 function validateIdentity(lastname, firstname) {
-
-    function validateField(value, fieldName) {
-        if (typeof value !== 'string') {
-            throw new Error(`${fieldName} must be a string`);
-        }
-
-        if (/[<>]/.test(value)) {
-            throw new Error(`${fieldName} contains forbidden characters`);
-        }
-
-        // Lettres + accents + espaces + tirets
-        const regex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'’-]+$/;
-
-        if (!regex.test(value) || value.trim() === '') {
-            throw new Error(`${fieldName} must contain only letters, accents, spaces or hyphens`);
-        }
-
-        return true;
-    }
-
-    validateField(lastname, 'lastname');
-    validateField(firstname, 'firstname');
-
+    validateNameField(lastname, 'Lastname');
+    validateNameField(firstname, 'Firstname');
     return true;
 }
 
-export {validatePostCode, validateEmail, validateIdentity}
+/**
+ * Validate lastname seul (pour le formulaire)
+ * @param {string} lastname
+ * @returns {boolean}
+ */
+function validateLastname(lastname) {
+    return validateNameField(lastname, 'Lastname');
+}
+
+/**
+ * Validate firstname seul (pour le formulaire)
+ * @param {string} firstname
+ * @returns {boolean}
+ */
+function validateFirstname(firstname) {
+    return validateNameField(firstname, 'Firstname');
+}
+
+export {
+    validatePostCode,
+    validateEmail,
+    validateIdentity,
+    validateLastname,
+    validateFirstname
+};
