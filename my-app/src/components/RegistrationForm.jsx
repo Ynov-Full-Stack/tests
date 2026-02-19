@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {validatePostCode, validateEmail, validateIdentity} from "../validator";
 import {calculateAge} from "../module";
+import {useNavigate} from "react-router-dom";
 
 
 function RegistrationForm() {
@@ -17,6 +18,7 @@ function RegistrationForm() {
     //state qui permet de savoir si l'input a été touché
     const [touched, setTouched] = useState({});
     const [success, setSuccess] = useState(false);
+    const navigate = useNavigate();
 
 
     /**
@@ -141,7 +143,9 @@ function RegistrationForm() {
 
         if (Object.keys(newErrors).length > 0) return;
 
-        localStorage.setItem("user", JSON.stringify(form));
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        users.push(form);
+        localStorage.setItem("users", JSON.stringify(users));
         setSuccess(true);
 
         setForm({
@@ -154,6 +158,10 @@ function RegistrationForm() {
         });
 
         setTouched({});
+
+        setTimeout(() => {
+            navigate("/");
+        }, 2000);
     };
 
     return (
