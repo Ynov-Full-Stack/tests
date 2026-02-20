@@ -1,41 +1,38 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 
 const UserContext = createContext();
 
-/**
- * User provider
- * @param children
- * @returns {JSX.Element}
- * @constructor
- */
 export const UserProvider = ({ children }) => {
-    const [users, setUsers] = useState(([]));
-
+    const [users, setUsers] = useState([]);
     useEffect(() => {
-        axios.get('https://jsonplaceholder.typicode.com/users')
-            .then(res => setUsers(res.data))
-            .catch(err => console.log(err))
+        axios.get("https://jsonplaceholder.typicode.com/users")
+            .then(({ data }) => setUsers(data))
+            .catch(err => {
+                console.error("Erreur JSONPlaceholder:", err);
+                setUsers([]);
+            });
     }, []);
 
     const addUser = async (user) => {
         try {
-            const response = await axios.post(
-                'https://jsonplaceholder.typicode.com/users',
-                user
-            );
-
-            setUsers(prev => [...prev, response.data]);
-
-            return { success: true, data: response.data };
-
+            const alreadyExists = users.some((u) => u.email === user.email);
+            if (alreadyExists) {
+                return {
+                    success: false,
+                    error: { message: "Cet email est déjà utilisé" },
+                };
+            }
+            const response = await axios.post("https://jsonplaceholder.typicode.com/users", user);
+            if (response.status === 201) {
+                const newUser = { ...user, id: Date.now() };
+                setUsers(prev => [...prev, newUser]);
+                return { success: true };
+            }
+            return { success: false, error: { message: "Erreur serveur" } };
         } catch (err) {
-            console.error("Erreur lors de l'ajout :", err);
-
-            return {
-                success: false,
-                error: err.response?.data || err.message
-            };
+            if (err.response?.status === 500) throw err;
+            return { success: false, error: { message: "Erreur serveur" } };
         }
     };
 
@@ -45,16 +42,4 @@ export const UserProvider = ({ children }) => {
         </UserContext.Provider>
     );
 };
-
-
-/**
- * Context error
- * @returns {unknown}
- */
-export const useUsers = () => {
-    const context = useContext(UserContext);
-    if (!context) {
-        throw new Error("useUsers doit être utilisé à l'intérieur de UserProvider");
-    }
-    return context;
-};
+export const useUsers = () => useContext(UserContext);

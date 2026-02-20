@@ -1,71 +1,63 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUsers } from "../context/UserContext";
-import {
-    validatePostCode,
-    validateEmail,
-    validateIdentity,
-} from "../validator";
-import { calculateAge } from "../module";
+import React, {useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {useUsers} from "../context/UserContext";
+import {validatePostCode, validateEmail, validateIdentity} from "../validator";
+import cityValidator from "../validator/cityValidator";
 
 function RegistrationForm() {
     const [form, setForm] = useState({
-        lastname: "",
-        firstname: "",
+        name: "",
+        username: "",
         email: "",
-        birth: "",
         city: "",
         postalCode: "",
     });
 
     const [errors, setErrors] = useState({
-        lastname: "",
-        firstname: "",
+        name: "",
+        username: "",
         email: "",
-        birth: "",
         city: "",
         postalCode: "",
     });
 
     const [touched, setTouched] = useState({
-        lastname: false,
-        firstname: false,
+        name: false,
+        username: false,
         email: false,
-        birth: false,
         city: false,
         postalCode: false,
     });
 
     const [success, setSuccess] = useState(false);
-    const { users, addUser } = useUsers();
+    const [error, setError] = useState("");
+
+    const {addUser} = useUsers();
     const navigate = useNavigate();
 
-    /**
-     * Validation d'un champ individuel avec les 3 fonctions importées
-     */
     const validateField = (fieldName, value) => {
-        // TOUS les champs vides → erreur explicite
         if (!value || value.trim() === "") {
-            return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(0)} must not be empty`;
+            const label =
+                fieldName === "postalCode"
+                    ? "PostalCode"
+                    : fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+            return `${label} must not be empty`;
         }
 
         try {
             switch (fieldName) {
-                case "firstname":
-                case "lastname":
+                case "username":
+                case "name":
                     validateIdentity(value, value);
                     return "";
                 case "email":
                     validateEmail(value);
                     return "";
+                case "city":
+                    cityValidator(value);
+                    return "";
                 case "postalCode":
                     validatePostCode(value);
-                    return "";
-                case "birth":
-                    calculateAge({ birth: new Date(value) });
-                    return "";
-                case "city":
-                    validateIdentity(value, value);
                     return "";
                 default:
                     return "";
@@ -76,40 +68,27 @@ function RegistrationForm() {
     };
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm((prev) => ({
-            ...prev,
-            [name]: value || "",
-        }));
-
+        const {name, value} = e.target;
+        setForm((prev) => ({...prev, [name]: value || ""}));
         if (touched[name]) {
-            const errorMessage = validateField(name, value);
-            setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+            setErrors((prev) => ({...prev, [name]: validateField(name, value)}));
         }
     };
 
     const handleBlur = (e) => {
-        const { name, value } = e.target;
-        setTouched((prev) => ({ ...prev, [name]: true }));
-        const errorMessage = validateField(name, value);
-        setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+        const {name, value} = e.target;
+        setTouched((prev) => ({...prev, [name]: true}));
+        setErrors((prev) => ({...prev, [name]: validateField(name, value)}));
     };
 
-    /**
-     * Formulaire globalement valide avec les 3 fonctions
-     */
     const isFormValid = () => {
         const allFilled = Object.values(form).every((v) => v.trim() !== "");
         if (!allFilled) return false;
-
         try {
-            validateIdentity(form.firstname, form.lastname);
+            validateIdentity(form.username, form.name);
             validateEmail(form.email);
             validatePostCode(form.postalCode);
-            calculateAge({ birth: new Date(form.birth) });
-            if (!form.city || form.city.trim() === "") {
-                return false;
-            }
+            cityValidator(form.city);
             return true;
         } catch {
             return false;
@@ -118,62 +97,63 @@ function RegistrationForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validation complète de tous les champs
-        const newErrors = {
-            firstname: validateField("firstname", form.firstname),
-            lastname: validateField("lastname", form.lastname),
-            email: validateField("email", form.email),
-            birth: validateField("birth", form.birth),
-            city: validateField("city", form.city),
-            postalCode: validateField("postalCode", form.postalCode),
-        };
-
-        setTouched({
-            firstname: true,
-            lastname: true,
-            email: true,
-            birth: true,
-            city: true,
-            postalCode: true,
+        setError("");
+        const newErrors = {};
+        Object.keys(form).forEach((field) => {
+            newErrors[field] = validateField(field, form[field]);
         });
-
+        setTouched({username: true, name: true, email: true, city: true, postalCode: true,});
         setErrors(newErrors);
 
         if (Object.values(newErrors).some((msg) => msg)) return;
 
-        const result = await addUser(form);
+        const formattedUser = {
+            name: form.name,
+            username: form.username,
+            email: form.email,
+            address: {
+                city: form.city,
+                zipcode: form.postalCode,
+            },
+        };
+        try {
+            const result = await addUser(formattedUser);
 
-        if (result.success) {
-            setSuccess(true);
-            setForm({ lastname: "", firstname: "", email: "", birth: "", city: "", postalCode: "" });
-            setErrors({ lastname: "", firstname: "", email: "", birth: "", city: "", postalCode: "" });
-            setTouched({ lastname: false, firstname: false, email: false, birth: false, city: false, postalCode: false });
-
-            setTimeout(() => {
-                navigate("/tests");
-            }, 2000);
-        }else{
-            alert(result.error?.message || result.error);
+            if (result.success) {
+                setSuccess(true);
+                setForm({name: "", username: "", email: "", city: "", postalCode: "",});
+                setErrors({name: "", username: "", email: "", city: "", postalCode: "",});
+                setTouched({name: false, username: false, email: false, city: false, postalCode: false,});
+                setTimeout(() => navigate("/tests"), 2000);
+            } else {
+                setError(result.error?.message || "Erreur serveur, veuillez réessayer");
+            }
+        } catch (err) {
+            if (err.response?.status === 400) {
+                setError(err.response.data?.message || "Cet email est déjà utilisé");
+            } else {
+                setError("Erreur serveur, veuillez réessayer plus tard");
+            }
         }
     };
-
     return (
         <form
             onSubmit={handleSubmit}
             data-testid="form"
-            className="max-w-md mx-auto bg-white shadow-lg rounded-xl p-6 space-y-4"
-        >
-            {["firstname", "lastname", "email", "birth", "city", "postalCode"].map((field) => (
+            className="max-w-md mx-auto bg-white shadow-lg rounded-xl p-6 space-y-4">
+            {["username", "name", "email", "city", "postalCode"].map((field) => (
                 <div key={field}>
                     <input
                         name={field}
-                        type={field === "birth" ? "date" : "text"}
-                        placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                        type="text"
+                        placeholder={
+                            field === "postalCode"
+                                ? "PostalCode"
+                                : field.charAt(0).toUpperCase() + field.slice(1)
+                        }
                         value={form[field]}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        data-testid={field === "birth" ? "birth" : undefined}
                         className={`w-full px-4 py-2 border rounded-lg ${
                             errors[field] && touched[field]
                                 ? "border-red-500"
@@ -192,16 +172,19 @@ function RegistrationForm() {
                 className={`w-full py-2 rounded-lg font-semibold transition ${
                     isFormValid()
                         ? "bg-blue-600 text-white"
-                        : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                }`}
-            >
-                Submit
+                        : "bg-gray-400 text-gray-200 cursor-not-allowed"}`}>Submit
             </button>
 
             {success && (
                 <div className="bg-green-500 text-white p-2 rounded">
                     User saved successfully!
                 </div>
+            )}
+
+            {error && (
+                <p role="alert" className="text-red-500 mt-2">
+                    {error}
+                </p>
             )}
         </form>
     );
