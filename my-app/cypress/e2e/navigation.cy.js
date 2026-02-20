@@ -1,58 +1,40 @@
 describe('Test Navigation', () => {
-
     beforeEach(() => {
-        cy.visit('http://localhost:3000/tests');
-
-        // Etat initial
-        cy.contains('0 utilisateur inscrit');
-
-        // Aller au formulaire
-        cy.contains('Inscription').click();
-
-        // Création utilisateur valide
-        cy.get('input[name="firstname"]').type('John');
-        cy.get('input[name="lastname"]').type('Doe');
-        cy.get('input[name="email"]').type('john.doe@example.com');
-        cy.get('input[name="birth"]').type('1990-01-01');
-        cy.get('input[name="city"]').type('Paris');
-        cy.get('input[name="postalCode"]').type('75000');
-
-        cy.get('button[type="submit"]').click();
-
-        // Vérifier retour accueil
-        cy.url().should('eq', 'http://localhost:3000/tests');
-        cy.contains('1 utilisateur inscrit');
+        cy.intercept('GET', 'https://jsonplaceholder.typicode.com/users', { body: [] });
+        cy.intercept('POST', 'https://jsonplaceholder.typicode.com/users', {
+            statusCode: 201,
+            body: { id: 1, success: true }
+        });
+        cy.visit('/tests');
     });
 
-    // Scénario nominal
-    it("Ajout d'un utilisateur valide et redirection vers la page d'accueil", () => {
-
-        cy.contains('John Doe');
-        cy.contains('john.doe@example.com');
-    });
-
-    // Scénario erreur (avec 1 utilisateur déjà présent)
-    it("Tentative d'ajout d'un utilisateur invalide", () => {
-
+    it("Ajout utilisateur valide", () => {
         cy.contains('Inscription').click();
 
-        cy.get('input[name="firstname"]').type('Jane');
-        cy.get('input[name="lastname"]').type('Doe');
-        cy.get('input[name="email"]').type('janedoeexample.com');
-        cy.get('input[name="birth"]').type('1990-01-01');
-        cy.get('input[name="city"]').type('Paris');
-        cy.get('input[name="postalCode"]').type('75000');
+        cy.get('[name="name"]').type('John Doe');
+        cy.get('[name="username"]').type('johndoe');
+        cy.get('[name="email"]').type('john@example.com');
+        cy.get('[name="city"]').type('Paris');
+        cy.get('[name="postalCode"]').type('75001');
 
+        cy.get('button[type="submit"]').click({ force: true });
+        cy.contains('User saved successfully!', { timeout: 10000 });
+        cy.contains('1 utilisateur inscrit', { timeout: 10000 });
+    });
+
+    it("Champs vides", () => {
+        cy.contains('Inscription').click();
+        cy.get('[name="name"]').focus().blur();
+        cy.contains('Name must not be empty');
+    });
+
+    it("Email invalide", () => {
+        cy.contains('Inscription').click();
+        cy.get('[name="email"]').type('invalid');
+        cy.get('[name="name"]').type('John Doe');
+        cy.get('[name="username"]').type('johndoe');
+        cy.get('[name="city"]').type('Paris');
+        cy.get('[name="postalCode"]').type('75001');
         cy.get('button[type="submit"]').should('be.disabled');
-
-        cy.contains('Email address must be in a valid format (example@domain.com)')
-            .should('be.visible');
-
-        cy.contains('Accueil').click();
-
-        // Toujours 1 utilisateur
-        cy.contains('1 utilisateur inscrit');
-        cy.contains('John Doe');
     });
-
 });
