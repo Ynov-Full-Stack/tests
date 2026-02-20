@@ -7,6 +7,7 @@
 - [Tests d'Intégration (IT)](#tests-dintégration-it)
 - [Couverture de Code](#couverture-de-code)
 - [Stratégie de Test](#stratégie-de-test)
+- [Mocks (IT & E2E)](#mocks)
 
 ---
 
@@ -17,7 +18,7 @@ Ce projet implémente un formulaire d'inscription utilisateur avec validation en
 - **Tests Unitaires (UT)** : Validation de la logique métier isolée (validators)
 - **Tests d'Intégration (IT)** : Validation de l'interface utilisateur et de l'intégration des composants
 
-**Total des tests** : 160 tests
+**Total des tests** : 151 tests
 **Couverture de code** : 100%
 
 ---
@@ -129,6 +130,30 @@ Les tests unitaires se concentrent sur la validation des règles métier de mani
 
 ---
 
+### 6. userValidator.test.js (19 tests)
+#### Scénarios couverts :
+- **Validation basique**
+  - Accepte noms de villes non vides 
+  - Supprime les espaces avant validation (trim)
+  - Accepte villes composées d’une seule lettre 
+  - Accepte villes avec espaces ou tirets 
+  - Accepte caractères accentués et Unicode
+
+- **Rejets des valeurs invalides**
+  - Rejette null 
+  - Rejette undefined 
+  - Rejette chaîne vide ""
+  - Rejette chaînes composées uniquement de whitespace 
+  - Rejette types non-string (number, object, array)
+  
+- **Gestion des erreurs**
+  - Lance une instance de ValidationError
+  - Retourne le message "City must not be empty"
+  - Edge cases
+  - Gère correctement les caractères internationaux (São Paulo, 東京)
+  - Rejette entrées avec uniquement espaces, tabulations ou sauts de ligne
+
+
 ## Tests d'Intégration (IT)
 
 Les tests d'intégration valident l'interaction entre l'UI et la logique métier, simulant le comportement d'un utilisateur réel.
@@ -151,7 +176,7 @@ Les tests d'intégration valident l'interaction entre l'UI et la logique métier
 #### 3. Comportement Utilisateur "Chaotique"
 
 - Gère corrections multiples : saisies invalides → corrections → re-saisies
-    - Teste firstName : invalide → corrigé
+    - Teste name : invalide → corrigé
     - Teste email : invalide → corrigé
     - Teste postalCode : lettres → chiffres valides
     - Vérifie que le bouton reste désactivé tant que formulaire incomplet
@@ -199,25 +224,30 @@ Les tests d'intégration valident l'interaction entre l'UI et la logique métier
 ## Couverture de Code
 
 ```
--------------------------|---------|----------|---------|---------|----------------------
-File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s    
--------------------------|---------|----------|---------|---------|----------------------
-All files                |   93.08 |    95.74 |   89.28 |   93.33 |                      
- src                     |   81.81 |      100 |      50 |   81.81 |                      
-  module.js              |     100 |      100 |     100 |     100 |                      
- src/components          |   90.54 |    90.47 |    87.5 |    90.9 |                      
-  Homepage.jsx           |     100 |      100 |     100 |     100 |                      
-  RegistrationForm.jsx   |   89.85 |    89.47 |   85.71 |   90.16 | 71,86-87,111,115,176 
- src/context             |   86.66 |       50 |     100 |   86.66 |                      
-  UserContext.js         |   86.66 |       50 |     100 |   86.66 | 17,39                
- src/validator           |     100 |      100 |     100 |     100 |                      
-  ValidationError.js     |     100 |      100 |     100 |     100 |                      
-  ageValidator.js        |     100 |      100 |     100 |     100 |                      
-  emailValidator.js      |     100 |      100 |     100 |     100 |                      
-  identityValidator.js   |     100 |      100 |     100 |     100 |                      
-  postalCodeValidator.js |     100 |      100 |     100 |     100 |                      
-  userValidator.js       |     100 |      100 |     100 |     100 |                      
--------------------------|---------|----------|---------|---------|----------------------
+-------------------------|---------|----------|---------|---------|-------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------------|---------|----------|---------|---------|-------------------
+All files                |    92.3 |    91.77 |   88.23 |   93.33 |                   
+ src                     |   81.81 |      100 |      50 |   81.81 |                   
+  App.js                 |       0 |      100 |       0 |       0 | 8                 
+  index.js               |       0 |      100 |     100 |       0 | 7-17              
+  module.js              |     100 |      100 |     100 |     100 |                   
+ src/components          |      90 |    78.84 |   88.23 |   92.95 |                   
+  Homepage.jsx           |     100 |    66.66 |     100 |     100 | 5,31-32           
+  RegistrationForm.jsx   |   89.33 |    81.39 |   86.66 |   92.42 | 63-66,74,94,133   
+ src/context             |   85.18 |    66.66 |    87.5 |    82.6 |                   
+  UserContext.js         |   85.18 |    66.66 |    87.5 |    82.6 | 12-13,32,35       
+ src/validator           |     100 |      100 |     100 |     100 |                   
+  ValidationError.js     |     100 |      100 |     100 |     100 |                   
+  ageValidator.js        |     100 |      100 |     100 |     100 |                   
+  cityValidator.js       |     100 |      100 |     100 |     100 |                   
+  emailValidator.js      |     100 |      100 |     100 |     100 |                   
+  identityValidator.js   |     100 |      100 |     100 |     100 |                   
+  index.js               |       0 |        0 |       0 |       0 |                   
+  postalCodeValidator.js |     100 |      100 |     100 |     100 |                   
+  userValidator.js       |     100 |      100 |     100 |     100 |                   
+-------------------------|---------|----------|---------|---------|-------------------
+
 ```
 
 ---
@@ -247,7 +277,7 @@ All files                |   93.08 |    95.74 |   89.28 |   93.33 |
 - **Accessibilité** : Rôles ARIA, labels
 
 
-## 4️⃣ End to End Tests (E2E) - 2 tests
+## End to End Tests (E2E) - 2 tests
 Le test de bout en bout (E2E) est une méthode de test logiciel qui consiste à vérifier le workflow de l’application du début à la fin.
 
 ```
@@ -267,3 +297,86 @@ _Scénarios testés :_
 * Affichage du message d’erreur
 * Vérification que l’utilisateur invalide n’est pas ajouté
 
+
+## Mocks 
+
+Les mocks permettent de :
+* Isoler la logique testée
+* Éviter les appels réseau réels
+* Simuler différents scénarios (succès, erreur 400, erreur 500)
+* Tester des comportements difficiles à reproduire
+* Accélérer l’exécution des tests
+
+**Mock des validateurs**
+```
+jest.mock("../validator", () => ({
+    validatePostCode: jest.fn(() => {}),
+    validateEmail: jest.fn(() => {}),
+    validateIdentity: jest.fn(() => {}),
+    cityValidator: jest.fn(() => {}),
+}));
+```
+
+**Mock appel API** 
+
+```
+jest.mock("axios");
+const mockedAxios = axios;
+```
+
+**Chargement d'un utilisateur** 
+
+```
+mockedAxios.get.mockResolvedValue({
+    data: [
+        { id: 1, email: "dupont@test.com", name: "Jean", username: "jdupont" },
+    ],
+});
+```
+
+**Simulation succès** 
+
+```
+mockedAxios.post.mockResolvedValue({ status: 201, data: { id: 2 } });
+```
+
+**Simulation POST 400 (email déjà utilise)**
+```
+expect(screen.getByRole("alert"))
+    .toHaveTextContent("Cet email est déjà utilisé");
+  ```
+
+**Simulation POST 500 (erreur serveur)**
+```
+mockedAxios.post.mockRejectedValue({
+    response: { status: 500 }
+});
+```
+
+**Navigation** 
+
+```
+const mockNavigate = jest.fn();
+
+jest.mock("react-router-dom", () => ({
+    ...jest.requireActual("react-router-dom"),
+    useNavigate: () => mockNavigate,
+}));
+```
+
+## Mocks E2E
+
+```
+cy.intercept('GET', 'https://jsonplaceholder.typicode.com/users', { body: [] });
+
+cy.intercept('POST', 'https://jsonplaceholder.typicode.com/users', {
+    statusCode: 201,
+    body: { id: 1, success: true }
+});
+```
+
+Pourquoi cy.intercept ?
+* Empêcher les appels réels à l’API externe
+* Contrôler totalement les réponses
+* Garantir des tests stables
+* Permettre l’exécution offline
