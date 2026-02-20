@@ -2,7 +2,7 @@ import React from 'react';
 import { useUsers } from '../context/UserContext';
 
 function Homepage() {
-    const { users } = useUsers();
+    const { users = [] } = useUsers();
 
     if (users.length === 0) {
         return (
@@ -24,12 +24,12 @@ function Homepage() {
                     {users.map((user, index) => (
                         <li key={index}>
                             <div className="user-info">
-                                <h3>{user.firstname} {user.lastname}</h3>
                                 <ul>
+                                    <li><strong>Nom :</strong> {user.name}</li>
+                                    <li><strong>Nom d'utilisateur :</strong> {user.username}</li>
                                     <li><strong>Email :</strong> {user.email}</li>
-                                    <li><strong>Date de naissance :</strong> {user.birth}</li>
-                                    <li><strong>Ville :</strong> {user.city}</li>
-                                    <li><strong>Code postal :</strong> {user.postalCode}</li>
+                                    <li><strong>Ville :</strong> {user.address?.city || 'N/A'}</li>
+                                    <li><strong>Code postal :</strong> {user.address?.zipcode || 'N/A'}</li>
                                 </ul>
                             </div>
                         </li>

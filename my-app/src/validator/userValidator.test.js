@@ -12,10 +12,10 @@ describe("validateUser - Complete user form validation", () => {
   describe("Valid cases - Complete valid user data", () => {
     it("should return true for a valid user with all correct fields", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "jean.dupont@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -24,63 +24,17 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return true for a user with complex valid names", () => {
       const userData = {
-        firstName: "Marie-Hélène",
-        lastName: "O'Connor",
-        birthDate: new Date(1985, 5, 15),
+        name: "Marie-Hélène",
+        username: "O'Connor",
         email: "marie.oconnor@company.fr",
+        city: "Paris",
         postalCode: "13001",
       };
 
       expect(validateUser(userData)).toBe(true);
     });
 
-    it("should return true for a user exactly 18 years old", () => {
-      const birthDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
-      const userData = {
-        firstName: "Pierre",
-        lastName: "Martin",
-        birthDate: birthDate,
-        email: "pierre.martin@test.com",
-        postalCode: "06000",
-      };
-
-      expect(validateUser(userData)).toBe(true);
-    });
-
-    it("should return true for a senior user", () => {
-      const userData = {
-        firstName: "Jacques",
-        lastName: "Durand",
-        birthDate: new Date(1950, 3, 20),
-        email: "jacques.durand@email.org",
-        postalCode: "69001",
-      };
-
-      expect(validateUser(userData)).toBe(true);
-    });
-
-    it("should return true for users with different postal codes", () => {
-      const userData1 = {
-        firstName: "Sophie",
-        lastName: "Bernard",
-        birthDate: new Date(1995, 10, 5),
-        email: "sophie@example.com",
-        postalCode: "01000",
-      };
-
-      const userData2 = {
-        firstName: "Luc",
-        lastName: "Petit",
-        birthDate: new Date(1988, 2, 12),
-        email: "luc@example.com",
-        postalCode: "99999",
-      };
-
-      expect(validateUser(userData1)).toBe(true);
-      expect(validateUser(userData2)).toBe(true);
-    });
-  });
-
+  })
   describe("Invalid cases - Missing or null user data", () => {
     it("should return false when userData is null", () => {
       expect(validateUser(null)).toBe(false);
@@ -106,97 +60,60 @@ describe("validateUser - Complete user form validation", () => {
     });
   });
 
-  describe("Invalid cases - Invalid firstName", () => {
-    it("should return false when firstName is missing", () => {
+  describe("Invalid cases - Invalid name", () => {
+    it("should return false when name is missing", () => {
       const userData = {
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        username: "Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when firstName is empty", () => {
+    it("should return false when name is empty", () => {
       const userData = {
-        firstName: "",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "",
+        username: "Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when firstName is too short", () => {
+    it("should return false when name is too short", () => {
       const userData = {
-        firstName: "J",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "J",
+        username: "Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when firstName contains numbers", () => {
+    it("should return false when name contains numbers", () => {
       const userData = {
-        firstName: "Jean123",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean123",
+        username: "Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when firstName contains XSS attempt", () => {
+    it("should return false when name contains XSS attempt", () => {
       const userData = {
-        firstName: "<script>alert('XSS')</script>",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "<script>alert('XSS')</script>",
+        username: "Dupont",
         email: "test@example.com",
-        postalCode: "75001",
-      };
-
-      expect(validateUser(userData)).toBe(false);
-    });
-  });
-
-  describe("Invalid cases - Invalid lastName", () => {
-    it("should return false when lastName is missing", () => {
-      const userData = {
-        firstName: "Jean",
-        birthDate: new Date(1990, 0, 1),
-        email: "test@example.com",
-        postalCode: "75001",
-      };
-
-      expect(validateUser(userData)).toBe(false);
-    });
-
-    it("should return false when lastName is empty", () => {
-      const userData = {
-        firstName: "Jean",
-        lastName: "",
-        birthDate: new Date(1990, 0, 1),
-        email: "test@example.com",
-        postalCode: "75001",
-      };
-
-      expect(validateUser(userData)).toBe(false);
-    });
-
-    it("should return false when lastName contains special characters", () => {
-      const userData = {
-        firstName: "Jean",
-        lastName: "Dupont@123",
-        birthDate: new Date(1990, 0, 1),
-        email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -204,63 +121,36 @@ describe("validateUser - Complete user form validation", () => {
     });
   });
 
-  describe("Invalid cases - Invalid birthDate", () => {
-    it("should return false when birthDate is missing", () => {
+  describe("Invalid cases - Invalid username", () => {
+    it("should return false when username is missing", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
+        name: "Jean",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when user is under 18", () => {
+    it("should return false when username is empty", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(today.getFullYear() - 17, today.getMonth(), today.getDate()),
+        name: "Jean",
+        username: "",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
       expect(validateUser(userData)).toBe(false);
     });
 
-    it("should return false when birthDate is in the future", () => {
-      const futureDate = new Date();
-      futureDate.setFullYear(futureDate.getFullYear() + 1);
-
+    it("should return false when username contains special characters", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: futureDate,
+        name: "Jean",
+        username: "Dupont@123",
         email: "test@example.com",
-        postalCode: "75001",
-      };
-
-      expect(validateUser(userData)).toBe(false);
-    });
-
-    it("should return false when birthDate is invalid", () => {
-      const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date("invalid"),
-        email: "test@example.com",
-        postalCode: "75001",
-      };
-
-      expect(validateUser(userData)).toBe(false);
-    });
-
-    it("should return false when birthDate is not a Date object", () => {
-      const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: "1990-01-01",
-        email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -271,9 +161,9 @@ describe("validateUser - Complete user form validation", () => {
   describe("Invalid cases - Invalid email", () => {
     it("should return false when email is missing", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -282,10 +172,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when email is empty", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -294,10 +184,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when email format is invalid", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "invalid-email",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -306,10 +196,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when email has no @", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "testexample.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -318,10 +208,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when email has XSS attempt", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "<script>@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -332,10 +222,10 @@ describe("validateUser - Complete user form validation", () => {
   describe("Invalid cases - Invalid postalCode", () => {
     it("should return false when postalCode is missing", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
       };
 
       expect(validateUser(userData)).toBe(false);
@@ -343,10 +233,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when postalCode is empty", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "",
       };
 
@@ -355,18 +245,18 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when postalCode has wrong length", () => {
       const userData1 = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "1234",
       };
 
       const userData2 = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "123456",
       };
 
@@ -376,10 +266,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when postalCode contains letters", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "7500A",
       };
 
@@ -388,10 +278,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when postalCode is not a string", () => {
       const userData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: 75001,
       };
 
@@ -402,10 +292,10 @@ describe("validateUser - Complete user form validation", () => {
   describe("Invalid cases - Multiple invalid fields", () => {
     it("should return false when multiple fields are invalid", () => {
       const userData = {
-        firstName: "J",
-        lastName: "D",
-        birthDate: new Date(today.getFullYear() - 17, 0, 1),
+        name: "A",
+        username: "D",
         email: "invalid-email",
+        city: "P",
         postalCode: "123",
       };
 
@@ -420,10 +310,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should return false when all fields are empty strings", () => {
       const userData = {
-        firstName: "",
-        lastName: "",
-        birthDate: "",
+        name: "",
+        username: "",
         email: "",
+        city: "",
         postalCode: "",
       };
 
@@ -434,10 +324,10 @@ describe("validateUser - Complete user form validation", () => {
   describe("Type checking and edge cases", () => {
     it("should return boolean type", () => {
       const validData = {
-        firstName: "Jean",
-        lastName: "Dupont",
-        birthDate: new Date(1990, 0, 1),
+        name: "Jean",
+        username: "Jean Dupont",
         email: "test@example.com",
+        city: "Paris",
         postalCode: "75001",
       };
 
@@ -447,10 +337,10 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should always return boolean, never throw exceptions", () => {
       const invalidData = {
-        firstName: "<script>",
-        lastName: null,
-        birthDate: "invalid",
+        name: "<script>",
+        username: null,
         email: 123,
+        city: [],
         postalCode: [],
       };
 
@@ -460,8 +350,8 @@ describe("validateUser - Complete user form validation", () => {
 
     it("should handle partial data gracefully", () => {
       const partialData = {
-        firstName: "Jean",
-        lastName: "Dupont",
+        name: "Jean",
+        username: "Dupont",
       };
 
       expect(validateUser(partialData)).toBe(false);

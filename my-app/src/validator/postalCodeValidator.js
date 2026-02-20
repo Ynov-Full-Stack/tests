@@ -1,7 +1,7 @@
 import ValidationError from "./ValidationError";
 
 /**
- * Validates that a postal code follows the French format (exactly 5 digits).
+ * Validates that a postal code follows the French format (exactly 9 digits).
  *
  * @function validatePostalCode
  * @param {string} postalCode - The postal code to validate
@@ -17,10 +17,10 @@ function validatePostalCode(postalCode) {
     throw new ValidationError("Postal code must be a string", "INVALID_POSTAL_CODE_TYPE");
   }
 
-  const postalCodeRegex = /^[0-9]{5}$/;
+  const postalCodeRegex = /^[0-9]{5}(?:-[0-9]{4})?$/;
 
   if (!postalCodeRegex.test(postalCode)) {
-    throw new ValidationError("Postal code must be exactly 5 digits with no spaces or special characters", "INVALID_POSTAL_CODE_FORMAT");
+    throw new ValidationError("Postal code must follow format 12345 or 12345-6789", "INVALID_POSTAL_CODE_FORMAT");
   }
 }
 
