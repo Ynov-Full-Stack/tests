@@ -116,7 +116,7 @@ function RegistrationForm() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation complète de tous les champs
@@ -142,39 +142,20 @@ function RegistrationForm() {
 
         if (Object.values(newErrors).some((msg) => msg)) return;
 
-        // Succès : sauvegarde
-        addUser(form);
-        setSuccess(true);
+        const result = await addUser(form);
 
-        // Reset
-        setForm({
-            lastname: "",
-            firstname: "",
-            email: "",
-            birth: "",
-            city: "",
-            postalCode: "",
-        });
-        setErrors({
-            lastname: "",
-            firstname: "",
-            email: "",
-            birth: "",
-            city: "",
-            postalCode: "",
-        });
-        setTouched({
-            lastname: false,
-            firstname: false,
-            email: false,
-            birth: false,
-            city: false,
-            postalCode: false,
-        });
+        if (result.success) {
+            setSuccess(true);
+            setForm({ lastname: "", firstname: "", email: "", birth: "", city: "", postalCode: "" });
+            setErrors({ lastname: "", firstname: "", email: "", birth: "", city: "", postalCode: "" });
+            setTouched({ lastname: false, firstname: false, email: false, birth: false, city: false, postalCode: false });
 
-        setTimeout(() => {
-            navigate("/tests");
-        }, 2000);
+            setTimeout(() => {
+                navigate("/tests");
+            }, 2000);
+        }else{
+            alert(result.error?.message || result.error);
+        }
     };
 
     return (

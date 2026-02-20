@@ -24,10 +24,18 @@ export const UserProvider = ({ children }) => {
                 'https://jsonplaceholder.typicode.com/users',
                 user
             );
-            // On met à jour le state avec ce que le serveur retourne
+
             setUsers(prev => [...prev, response.data]);
+
+            return { success: true, data: response.data };
+
         } catch (err) {
             console.error("Erreur lors de l'ajout :", err);
+
+            return {
+                success: false,
+                error: err.response?.data || err.message
+            };
         }
     };
 
