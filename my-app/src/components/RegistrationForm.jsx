@@ -37,7 +37,7 @@ function RegistrationForm() {
     });
 
     const [success, setSuccess] = useState(false);
-    const { users, setUsers } = useUsers();
+    const { users, addUser } = useUsers();
     const navigate = useNavigate();
 
     /**
@@ -143,7 +143,7 @@ function RegistrationForm() {
         if (Object.values(newErrors).some((msg) => msg)) return;
 
         // Succès : sauvegarde
-        setUsers([...users, form]);
+        addUser(form);
         setSuccess(true);
 
         // Reset

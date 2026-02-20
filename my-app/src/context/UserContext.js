@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import axios from "axios";
 
 const UserContext = createContext();
 
@@ -9,25 +10,34 @@ const UserContext = createContext();
  * @constructor
  */
 export const UserProvider = ({ children }) => {
-    const [users, setUsers] = useState(() => {
-        const storedUsers = localStorage.getItem("users");
-        try {
-            return storedUsers ? JSON.parse(storedUsers) : [];
-        } catch {
-            return [];
-        }
-    });
+    const [users, setUsers] = useState(([]));
 
     useEffect(() => {
-        localStorage.setItem("users", JSON.stringify(users));
-    }, [users]);
+        axios.get('https://jsonplaceholder.typicode.com/users')
+            .then(res => setUsers(res.data))
+            .catch(err => console.log(err))
+    }, []);
+
+    const addUser = async (user) => {
+        try {
+            const response = await axios.post(
+                'https://jsonplaceholder.typicode.com/users',
+                user
+            );
+            // On met à jour le state avec ce que le serveur retourne
+            setUsers(prev => [...prev, response.data]);
+        } catch (err) {
+            console.error("Erreur lors de l'ajout :", err);
+        }
+    };
 
     return (
-        <UserContext.Provider value={{ users, setUsers }}>
+        <UserContext.Provider value={{ users, addUser }}>
             {children}
         </UserContext.Provider>
     );
 };
+
 
 /**
  * Context error
