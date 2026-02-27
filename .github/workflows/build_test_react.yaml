@@ -9,71 +9,87 @@ on:
 jobs:
 
   # ===============================
-  #  JOB 1 BUILD & TEST
+  #  JOB 1 — BUILD & TEST
   # ===============================
   build_test:
-    name: Build & Test
+    name: Build, Test & Pages Artifact
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         node_version: [20.x]
 
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
-      - uses: pnpm/action-setup@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
         with:
           version: 8
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install
 
-      # Tests
       - name: Run tests
         run: pnpm test
         working-directory: my-app
 
-      # Build React
       - name: Build React app
         run: pnpm build
         working-directory: my-app
 
+      # Configure GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # Upload artifact required for deploy
+      - name: Upload artifact (Pages)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: my-app/build
+
 
 
   # ===============================
-  #  JOB 2 -  PUBLISH NPM
+  #  JOB 2 — PUBLISH NPM
   # ===============================
   publish-npm:
     name: Publish to NPM
     needs: build_test
     runs-on: ubuntu-latest
 
-    outputs:
-      published: ${{ steps.version_check.outputs.published }}
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Install pnpm (OBLIGATOIRE)
-      - uses: pnpm/action-setup@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
         with:
           version: 8
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node with NPM registry
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install
 
+      # Compare local vs remote version
       - name: Check version difference
         id: version_check
         run: |
@@ -94,21 +110,20 @@ jobs:
         if: steps.version_check.outputs.published == 'true'
         run: pnpm run build-npm-ci
 
-      # Publish
       - name: Publish to NPM
         if: steps.version_check.outputs.published == 'true'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Skip message
       - name: Skip publish
         if: steps.version_check.outputs.published == 'false'
         run: echo "Version unchanged — skipping publish."
 
 
+
   # ===============================
-  # JOB 3 - DEPLOY
+  #  JOB 3 — DEPLOY PAGES
   # ===============================
   deploy:
     name: Deploy to GitHub Pages
@@ -123,4 +138,5 @@ jobs:
       name: github-pages
 
     steps:
-      - uses: actions/deploy-pages@v4
+      - name: Deploy
+        uses: actions/deploy-pages@v4
