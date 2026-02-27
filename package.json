@@ -7,7 +7,7 @@
   "scripts": {
     "test": "jest --coverage",
     "jsdoc": "jsdoc -R ./my-app/README.md -c ./jsdoc.config.json -r ./my-app/src -d ./public/docs",
-    "build-npm-ci": "NODE_ENV=production && rm -rf dist && mkdir dist && npx babel src --out-dir dist --copy-files"
+    "build-npm-ci": "rm -rf dist && npx babel my-app/src --out-dir dist --copy-files"
   },
   "keywords": [],
   "author": "",
