@@ -96,3 +96,7 @@ _Scénario simulé :_
 * ✅ Formulaire réinitialisé
 * ✅ Message de succès affiché
 Test bypass
+
+## 5 - Npm Publish 
+
+https://www.npmjs.com/package/axel-ci-cd-ynov
