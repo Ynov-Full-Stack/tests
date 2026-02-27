@@ -1,18 +1,22 @@
 {
-  "name": "tests",
+  "name": "axel-ci-cd-ynov",
   "version": "1.0.0",
   "homepage": ".",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "jest --coverage",
-    "jsdoc": "jsdoc -R ./my-app/README.md -c ./jsdoc.config.json -r ./my-app/src -d ./public/docs"
+    "jsdoc": "jsdoc -R ./my-app/README.md -c ./jsdoc.config.json -r ./my-app/src -d ./public/docs",
+    "build-npm-ci": "NODE_ENV=production && rm -rf dist && mkdir dist && npx babel src --out-dir dist --copy-files"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.28.2",
   "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-react-jsx": "^7.28.6",
     "jsdoc": "^4.0.5"
   },
   "dependencies": {
