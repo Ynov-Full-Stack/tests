@@ -12,7 +12,7 @@ jobs:
   #  JOB 1 BUILD & TEST
   # ===============================
   build_test:
-    name: Build, Test & Docs
+    name: Build & Test
     runs-on: ubuntu-latest
 
     strategy:
@@ -25,23 +25,25 @@ jobs:
       - uses: pnpm/action-setup@v3
         with:
           version: 8
-          run_install: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          registry-url: https://registry.npmjs.org/
           cache: 'pnpm'
 
-      - run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
+      # Tests
       - name: Run tests
         run: pnpm test
         working-directory: my-app
 
+      # Build React
       - name: Build React app
         run: pnpm build
         working-directory: my-app
+
 
 
   # ===============================
@@ -58,38 +60,41 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install pnpm (OBLIGATOIRE)
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install
 
-      # 🔎 Compare versions
       - name: Check version difference
         id: version_check
         run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
           LOCAL_VERSION=$(node -p "require('./package.json').version")
-          REMOTE_VERSION=$(npm view $(node -p "require('./package.json').name") version || echo "0.0.0")
+          REMOTE_VERSION=$(npm view $PACKAGE_NAME version 2>/dev/null || echo "0.0.0")
 
           echo "Local: $LOCAL_VERSION"
           echo "Remote: $REMOTE_VERSION"
 
           if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
-            echo "New version detected"
             echo "published=true" >> $GITHUB_OUTPUT
           else
-            echo "No new version"
             echo "published=false" >> $GITHUB_OUTPUT
           fi
 
-      #  Build NPM package
       - name: Build library
         if: steps.version_check.outputs.published == 'true'
         run: pnpm run build-npm-ci
 
-      #  Publish
+      # Publish
       - name: Publish to NPM
         if: steps.version_check.outputs.published == 'true'
         run: npm publish --access public
