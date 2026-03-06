@@ -61,7 +61,6 @@ jobs:
           path: my-app/build
 
 
-
   # ===============================
   #  JOB 2 — PUBLISH NPM
   # ===============================
@@ -104,22 +103,23 @@ jobs:
             echo "published=true" >> $GITHUB_OUTPUT
           else
             echo "published=false" >> $GITHUB_OUTPUT
-          fi
 
+      # Build NPM package if version is new
       - name: Build library
         if: steps.version_check.outputs.published == 'true'
         run: pnpm run build-npm-ci
 
+      # Publish only if version is new
       - name: Publish to NPM
         if: steps.version_check.outputs.published == 'true'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Skip message if unchanged
       - name: Skip publish
         if: steps.version_check.outputs.published == 'false'
         run: echo "Version unchanged — skipping publish."
-
 
 
   # ===============================
@@ -138,5 +138,95 @@ jobs:
       name: github-pages
 
     steps:
+      - name: Download Pages artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Pages
+          path: my-app/build
+
       - name: Deploy
         uses: actions/deploy-pages@v4
+
+
+  # ===============================
+  #  JOB 4 — VALIDATION & DOCKER HUB
+  # ===============================
+  validate-and-push-api:
+    name: Validate and Push to Docker Hub
+    needs: publish-npm
+    runs-on: ubuntu-latest
+
+    env:
+      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+      MYSQL_DB: ${{ secrets.MYSQL_DB }}
+      MYSQL_HOST: mysql-container
+      API_IMAGE_NAME: axelynov/fastapi:latest
+      MYSQL_IMAGE_NAME: axelynov/mysql-db:latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build MySQL & FastAPI images
+        run: |
+          docker build -t $MYSQL_IMAGE_NAME -f ./Dockerfile.mysql . 
+          docker build -t $API_IMAGE_NAME -f ./server/Dockerfile.fastapi .
+          
+      - name: Run MySQL & FastAPI containers
+        run: |
+          docker run -d --name mysql-container \
+            -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
+            -e MYSQL_USER=${MYSQL_USER} \
+            -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
+            -e MYSQL_DATABASE=${MYSQL_DB} \
+            -p 3306:3306 \
+            $MYSQL_IMAGE_NAME 
+          echo "Waiting for MySQL to initialize..." 
+          sleep 20
+          docker run -d --name api-container \
+            -e MYSQL_HOST=${MYSQL_HOST} \
+            -e MYSQL_USER=${MYSQL_USER} \
+            -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
+            -e MYSQL_DB=${MYSQL_DB} \
+            -p 8000:8000 \
+            $API_IMAGE_NAME 
+          echo "Waiting for API to start..."
+          sleep 10
+
+      - name: Test API
+        run: |
+          RESPONSE=$(curl -s -w "%{http_code}" http://localhost:8000/users)
+          
+          HTTP_CODE=${RESPONSE: -3}
+          BODY=${RESPONSE::-3}
+          
+          echo "HTTP_CODE=$HTTP_CODE"
+          echo "BODY=$BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "API did not return HTTP 200"
+            exit 1
+          fi
+          
+          if [ "$BODY" = "[]" ]; then
+            echo "User list is empty"
+            exit 1
+          fi
+        
+          echo "API test passed"
+
+      - name: Login to Docker Hub
+        if: success()
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push API image
+        if: success()
+        run: |
+          docker push $API_IMAGE_NAME
+
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker rm -f api-container mysql-container || true
+
