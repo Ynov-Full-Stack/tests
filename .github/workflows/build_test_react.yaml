@@ -61,7 +61,6 @@ jobs:
           path: my-app/build
 
 
-
   # ===============================
   #  JOB 2 — PUBLISH NPM
   # ===============================
@@ -104,22 +103,23 @@ jobs:
             echo "published=true" >> $GITHUB_OUTPUT
           else
             echo "published=false" >> $GITHUB_OUTPUT
-          fi
 
+      # Build NPM package if version is new
       - name: Build library
         if: steps.version_check.outputs.published == 'true'
         run: pnpm run build-npm-ci
 
+      # Publish only if version is new
       - name: Publish to NPM
         if: steps.version_check.outputs.published == 'true'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      # Skip message if unchanged
       - name: Skip publish
         if: steps.version_check.outputs.published == 'false'
         run: echo "Version unchanged — skipping publish."
-
 
 
   # ===============================
@@ -138,5 +138,11 @@ jobs:
       name: github-pages
 
     steps:
+      - name: Download Pages artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: Pages
+          path: my-app/build
+
       - name: Deploy
         uses: actions/deploy-pages@v4
