@@ -211,10 +211,12 @@ jobs:
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Push API image
+      - name: Tag and Push API Image to Docker Hub
         if: success()
         run: |
-          docker push axelynov/mysql-db:latest
+          docker tag fastapi ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
+          echo "API Image successfully pushed to Docker Hub!"
 
       - name: Cleanup containers
         if: always()
