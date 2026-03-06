@@ -171,8 +171,8 @@ jobs:
 
       - name: Build MySQL & FastAPI images
         run: |
-          docker build -t mysql-db ./Dockerfile.mysql . 
-          docker build -t fastapi ./server/Dockerfile.fastapi .
+          DOCKER_BUILDKIT=0 docker build -t mysql-db -f ./Dockerfile.mysql .
+          DOCKER_BUILDKIT=0 docker build -t fastapi -f ./server/Dockerfile.fastapi .
           
       - name: Run MySQL & FastAPI containers
         run: |
