@@ -162,8 +162,8 @@ jobs:
       MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
       MYSQL_DB: ${{ secrets.MYSQL_DB }}
       MYSQL_HOST: mysql-container
-      API_IMAGE_NAME: axelynov/fastapi:latest
-      MYSQL_IMAGE_NAME: axelynov/mysql-db:latest
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -171,8 +171,8 @@ jobs:
 
       - name: Build MySQL & FastAPI images
         run: |
-          docker build -t $MYSQL_IMAGE_NAME -f ./Dockerfile.mysql . 
-          docker build -t $API_IMAGE_NAME -f ./server/Dockerfile.fastapi .
+          docker build -t mysql-db ./Dockerfile.mysql . 
+          docker build -t fastapi ./server/Dockerfile.fastapi .
           
       - name: Run MySQL & FastAPI containers
         run: |
@@ -182,7 +182,7 @@ jobs:
             -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
             -e MYSQL_DATABASE=${MYSQL_DB} \
             -p 3306:3306 \
-            $MYSQL_IMAGE_NAME 
+            mysql-db 
           echo "Waiting for MySQL to initialize..." 
           sleep 20
           docker run -d --name api-container \
@@ -191,30 +191,20 @@ jobs:
             -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
             -e MYSQL_DB=${MYSQL_DB} \
             -p 8000:8000 \
-            $API_IMAGE_NAME 
+            fastapi 
           echo "Waiting for API to start..."
           sleep 10
 
-      - name: Test API 
+      - name: Validate API Response
         run: |
-        
-          STATUS=$(curl -s -o response.json -w "%{http_code}" http://localhost:8000/users)
-        
-          echo "Status: $STATUS"
-          cat response.json
-          
-          if [ "$STATUS" != "200" ]; then
-            echo "❌ HTTP != 200"
+          # Count users in JSON response
+          users_count=$(curl -s http://localhost:8000/users | jq '.utilisateurs | length')
+          if [ "$users_count" -eq 0 ]; then
+            echo "API test failed: No users found"
             exit 1
           fi
-          
-          USERS_COUNT=$(cat response.json | grep -c '{')
-          if [ "$USERS_COUNT" -eq 0 ]; then
-            echo "❌ No users"
-            exit 1
-          fi
-          
-          echo "✅ SUCCESS"
+          echo "API validation successful: $users_count users found"
+      
 
       - name: Login to Docker Hub
         if: success()
@@ -224,7 +214,7 @@ jobs:
       - name: Push API image
         if: success()
         run: |
-          docker push $API_IMAGE_NAME
+          docker push axelynov/mysql-db:latest
 
       - name: Cleanup containers
         if: always()
