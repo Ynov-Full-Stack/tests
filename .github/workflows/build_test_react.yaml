@@ -206,19 +206,14 @@ jobs:
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Show project structure
-        run: |
-          ls -R
-      - name: Debug files
-        run: |
-          pwd
-          ls
-          ls server
 
       - name: Tag and Push API Image to Docker Hub
         if: success()
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest ./server
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest \
+            -f server/fastapi.Dockerfile \
+            ./server
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
           echo "API Image successfully pushed to Docker Hub!"
 
