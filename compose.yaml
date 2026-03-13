@@ -1,7 +1,6 @@
 services:
   db:
     image: mysql:9.6
-    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD
 
@@ -36,6 +35,5 @@ services:
       db:
         condition: service_healthy
     image: adminer
-    restart: always
     ports:
       - '39080:8080'
