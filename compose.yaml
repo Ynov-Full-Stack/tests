@@ -1,0 +1,41 @@
+services:
+  db:
+    image: mysql:9.6
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD
+
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./sqlfiles/:/docker-entrypoint-initdb.d/
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  server:
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+    ports:
+      - "8000:8000"
+    build:
+      context: .
+      dockerfile: "server/fastapi.Dockerfile"
+
+  adminer:
+    depends_on:
+      db:
+        condition: service_healthy
+    image: adminer
+    restart: always
+    ports:
+      - '39080:8080'
