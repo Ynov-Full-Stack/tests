@@ -28,7 +28,7 @@ services:
       - "8000:8000"
     build:
       context: .
-      dockerfile: "server/fastapi.Dockerfile"
+      dockerfile: "fastapi.Dockerfile"
 
   adminer:
     depends_on:
