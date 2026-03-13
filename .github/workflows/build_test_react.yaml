@@ -209,10 +209,10 @@ jobs:
 
       - name: Tag and Push API Image to Docker Hub
         if: success()
+        working-directory: server
         run: |
-          docker build -f server/fastapi.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest .
+          docker build -f fastapi.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest .
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
-          echo "API Image successfully pushed to Docker Hub!"
 
       - name: Cleanup
         if: always()
