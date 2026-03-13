@@ -15,4 +15,4 @@ COPY /server/main.py .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "server.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8000"]
