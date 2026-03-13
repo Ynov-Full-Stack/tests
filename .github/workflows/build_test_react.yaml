@@ -57,7 +57,7 @@ jobs:
 
       # Upload artifact required for deploy
       - name: Upload artifact (Pages)
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: my-app/build
 
