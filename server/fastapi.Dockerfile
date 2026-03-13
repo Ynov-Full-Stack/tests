@@ -2,7 +2,7 @@ FROM python:3.12-alpine AS builder
 
 WORKDIR /app
 
-COPY server/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 FROM python:3.12-alpine
@@ -11,7 +11,7 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 
-COPY /server/main.py .
+COPY main.py .
 
 EXPOSE 8000
 
