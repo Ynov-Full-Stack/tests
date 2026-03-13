@@ -206,6 +206,15 @@ jobs:
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
+      - name: Show project structure
+        run: |
+          ls -R
+      - name: Debug files
+        run: |
+          pwd
+          ls
+          ls server
+
       - name: Tag and Push API Image to Docker Hub
         if: success()
         run: |
