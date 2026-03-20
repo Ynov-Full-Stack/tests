@@ -210,7 +210,7 @@ jobs:
       - name: Validate API Response
         run: |
           # Count users in JSON response
-          users_count=$(curl -s http://localhost:8000/users | jq '.utilisateurs | length')
+          users_count=$(curl -s http://localhost:8000/users | jq 'length')
           if [ "$users_count" -eq 0 ]; then
             echo "API test failed: No users found"
             exit 1
