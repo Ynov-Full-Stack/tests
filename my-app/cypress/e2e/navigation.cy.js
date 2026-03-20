@@ -1,7 +1,7 @@
 describe('Test Navigation', () => {
     beforeEach(() => {
-        cy.intercept('GET', 'https://jsonplaceholder.typicode.com/users', { body: [] });
-        cy.intercept('POST', 'https://jsonplaceholder.typicode.com/users', {
+        cy.intercept('GET', '**/users', { body: [] });
+        cy.intercept('POST', '**/users', {
             statusCode: 201,
             body: { id: 1, success: true }
         });

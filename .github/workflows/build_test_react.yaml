@@ -45,7 +45,7 @@ jobs:
       - name: Run tests
         run: pnpm test
         working-directory: my-app
-        continue-on-error: true  # ← Ajoute ça
+        continue-on-error: true
 
       - name: Build React app
         run: pnpm build
@@ -175,6 +175,23 @@ jobs:
 
       - name: Check running containers
         run: docker compose ps
+
+      - name: Wait for React app
+        run: |
+          echo "Waiting for React..."
+          for i in {1..20}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "React is ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "React did not start"
+          docker compose logs
+          exit 1
+
+      - name: Run Cypress E2E tests
+        run: docker compose run --rm cypress
 
       - name: Wait for API to start
         run: |

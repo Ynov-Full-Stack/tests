@@ -6,10 +6,10 @@ const UserContext = createContext();
 export const UserProvider = ({ children }) => {
     const [users, setUsers] = useState([]);
     useEffect(() => {
-        axios.get("https://jsonplaceholder.typicode.com/users")
+        axios.get("http://localhost:8000/users")
             .then(({ data }) => setUsers(data))
             .catch(err => {
-                console.error("Erreur JSONPlaceholder:", err);
+                console.error("Erreur backend:", err);
                 setUsers([]);
             });
     }, []);
@@ -23,10 +23,9 @@ export const UserProvider = ({ children }) => {
                     error: { message: "Cet email est déjà utilisé" },
                 };
             }
-            const response = await axios.post("https://jsonplaceholder.typicode.com/users", user);
+            const response = await axios.post("http://localhost:8000/users", user);
             if (response.status === 201) {
-                const newUser = { ...user, id: Date.now() };
-                setUsers(prev => [...prev, newUser]);
+                setUsers(prev => [...prev, response.data]);
                 return { success: true };
             }
             return { success: false, error: { message: "Erreur serveur" } };
