@@ -45,7 +45,6 @@ jobs:
       - name: Run tests
         run: pnpm test
         working-directory: my-app
-        continue-on-error: true
 
       - name: Build React app
         run: pnpm build
@@ -206,6 +205,12 @@ jobs:
           echo "API did not start"
           docker compose logs
           exit 1
+
+      - name: Run Cypress (real API)
+        run: docker compose run --rm cypress
+
+      - name: Run Cypress 500 tests
+        run: docker compose run --rm cypress --env grep=500
 
       - name: Validate API Response
         run: |

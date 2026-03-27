@@ -72,7 +72,7 @@ def create_user(user: UserCreate):
             VALUES (%s, %s, %s, %s, %s) \
             """
 
-    values = (user.username, user.name, user.email, user.city, user.postalCode)
+    values = (user.username, user.name, user.email, user.address.city, user.address.zipcode)
     cursor.execute(query, values)
     conn.commit()
 
@@ -89,4 +89,22 @@ def create_user(user: UserCreate):
             "city": user.address.city,
             "zipcode": user.address.zipcode
         }
+
+
     }
+@app.delete("/testing/reset")
+def reset_db():
+    conn = get_conn()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM utilisateur")
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return {"status": "reset"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

@@ -17,6 +17,7 @@
     "@babel/cli": "^7.28.6",
     "@babel/core": "^7.29.0",
     "@babel/plugin-transform-react-jsx": "^7.28.6",
+    "cypress-grep": "^3.0.4",
     "jsdoc": "^4.0.5"
   },
   "dependencies": {
