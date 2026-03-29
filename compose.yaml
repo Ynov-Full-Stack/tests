@@ -59,16 +59,16 @@ services:
     volumes:
       - ./my-app:/e2e
     environment:
-      - CYPRESS_baseUrl=http://react:3000
-      - CYPRESS_defaultCommandTimeout=20000
-    entrypoint: [ "sh", "-c" ]
+      CYPRESS_baseUrl: http://react:3000
+      CYPRESS_defaultCommandTimeout: 20000
+    entrypoint: [ "/bin/sh", "-c" ]
     command: |
-      echo 'Waiting for React frontend...'
-      until curl -s http://react:3000 > /dev/null; do
-        echo 'React not ready, waiting 2s...'
+      echo "Waiting for React frontend..."
+      until curl -fs http://react:3000 >/dev/null; do
+        echo "React not ready, waiting 2s..."
         sleep 2
       done
-      echo 'React ready, starting Cypress'
+      echo "React ready, starting Cypress"
       npx cypress run
 
   adminer:
