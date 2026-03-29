@@ -61,16 +61,15 @@ services:
     environment:
       - CYPRESS_baseUrl=http://react:3000
       - CYPRESS_defaultCommandTimeout=20000
-    command: >
-      sh -c "
-        echo 'Waiting for React frontend...';
-        until curl -s http://react:3000 > /dev/null; do
-          echo 'React not ready, waiting 2s...';
-          sleep 2;
-        done;
-        echo 'React ready, starting Cypress';
-        npx cypress run
-      "
+    entrypoint: [ "sh", "-c" ]
+    command: |
+      echo 'Waiting for React frontend...'
+      until curl -s http://react:3000 > /dev/null; do
+        echo 'React not ready, waiting 2s...'
+        sleep 2
+      done
+      echo 'React ready, starting Cypress'
+      npx cypress run
 
   adminer:
     depends_on:
