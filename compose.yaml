@@ -53,23 +53,17 @@ services:
 
   cypress:
     image: cypress/included:13.6.0
-    depends_on:
-      - react
+    entrypoint: ["npx"]
     working_dir: /e2e
     volumes:
       - ./my-app:/e2e
     environment:
       CYPRESS_baseUrl: http://react:3000
       CYPRESS_defaultCommandTimeout: 20000
-    entrypoint: [ "/bin/sh", "-c" ]
-    command: |
-      echo "Waiting for React frontend..."
-      until curl -fs http://react:3000 >/dev/null; do
-        echo "React not ready, waiting 2s..."
-        sleep 2
-      done
-      echo "React ready, starting Cypress"
-      npx cypress run
+      CYPRESS_grep: 500
+    command: ["cypress", "run"]
+    depends_on:
+      - react
 
   adminer:
     depends_on:
