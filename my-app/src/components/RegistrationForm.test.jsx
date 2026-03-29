@@ -144,6 +144,11 @@ describe("RegistrationForm - Tests Complets", () => {
         });
 
         test("POST 400 - Email déjà utilisé", async () => {
+            // Mock axios pour renvoyer l'erreur 400
+            mockedAxios.post.mockRejectedValue({
+                response: { status: 400, data: { detail: "Cet email est déjà utilisé" } },
+            });
+
             renderWithProviders(<RegistrationForm />);
             fireEvent.change(screen.getByPlaceholderText("Name"), {
                 target: { value: "Jean" },

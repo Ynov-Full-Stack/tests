@@ -16,22 +16,24 @@ export const UserProvider = ({ children }) => {
 
     const addUser = async (user) => {
         try {
-            const alreadyExists = users.some((u) => u.email === user.email);
-            if (alreadyExists) {
-                return {
-                    success: false,
-                    error: { message: "Cet email est déjà utilisé" },
-                };
-            }
             const response = await axios.post("http://localhost:8000/users", user);
+
             if (response.status === 201) {
                 setUsers(prev => [...prev, response.data]);
-                return { success: true };
+                return { success: true, data: response.data };
             }
+
             return { success: false, error: { message: "Erreur serveur" } };
+
         } catch (err) {
             if (err.response?.status === 500) throw err;
-            return { success: false, error: { message: "Erreur serveur" } };
+
+            return {
+                success: false,
+                error: {
+                    message: err.response?.data?.detail || "Erreur serveur"
+                }
+            };
         }
     };
 
