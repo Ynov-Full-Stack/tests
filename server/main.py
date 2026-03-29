@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import os
 import re
+import logging
+
 from dotenv import load_dotenv
+from fastapi import Request
 import mysql.connector
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("server")
 
 app = FastAPI()
 origins = ["*"]
@@ -58,6 +63,8 @@ def get_users():
 
 @app.post("/users", status_code=201)
 def create_user(user: UserCreate):
+    logger.info("POST /users reçu avec les données : %s", user.dict())
+
     conn = get_conn()
     cursor = conn.cursor(dictionary=True)
 
@@ -65,13 +72,13 @@ def create_user(user: UserCreate):
     if cursor.fetchone():
         cursor.close()
         conn.close()
+        logger.warning("Tentative de création avec email déjà utilisé : %s", user.email)
         raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
 
     query = """
             INSERT INTO utilisateur (username, name, email, city, postal_code)
-            VALUES (%s, %s, %s, %s, %s) \
+            VALUES (%s, %s, %s, %s, %s)
             """
-
     values = (user.username, user.name, user.email, user.address.city, user.address.zipcode)
     cursor.execute(query, values)
     conn.commit()
@@ -79,6 +86,8 @@ def create_user(user: UserCreate):
     new_id = cursor.lastrowid
     cursor.close()
     conn.close()
+
+    logger.info("Utilisateur créé avec succès, id=%d", new_id)
 
     return {
         "id": new_id,
@@ -89,8 +98,6 @@ def create_user(user: UserCreate):
             "city": user.address.city,
             "zipcode": user.address.zipcode
         }
-
-
     }
 @app.delete("/testing/reset")
 def reset_db():
@@ -108,3 +115,10 @@ def reset_db():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info("Requête reçue: %s %s", request.method, request.url.path)
+    response = await call_next(request)
+    logger.info("Réponse pour %s %s : %d", request.method, request.url.path, response.status_code)
+    return response
