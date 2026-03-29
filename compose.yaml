@@ -58,8 +58,8 @@ services:
     volumes:
       - ./my-app:/e2e
     environment:
-      CYPRESS_baseUrl: http://react:3000
-      CYPRESS_defaultCommandTimeout: 20000
+      CYPRESS_baseUrl: http://server:8000
+      CYPRESS_defaultCommandTimeout: 40000
       CYPRESS_grep: 500
     command: ["cypress", "run"]
     depends_on:
