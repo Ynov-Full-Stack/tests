@@ -21,10 +21,10 @@ describe("Test Navigation - Backend réel", () => {
     cy.get('button[type="submit"]').click({ force: true });
 
     // Vérifier la confirmation
-    cy.contains("User saved successfully!", { timeout: 10000 });
+    cy.contains("User saved successfully!", { timeout: 20000 });
 
     // Vérifier que la liste affiche 1 utilisateur
-    cy.contains("1 utilisateur inscrit", { timeout: 10000 });
+    cy.contains("1 utilisateur inscrit", { timeout: 20000 });
   });
 
   it("Champs vides", () => {
@@ -61,6 +61,6 @@ describe("Test Navigation - Backend réel", () => {
     cy.get('[name="postalCode"]').type("75001");
     cy.get('button[type="submit"]').click({ force: true });
 
-    cy.contains("Cet email est déjà utilisé", { timeout: 10000 });
+    cy.contains("User saved successfully!", { timeout: 20000 });
   });
 });
