@@ -152,67 +152,67 @@ jobs:
   # ===============================
   #  JOB 4 — VALIDATION & DOCKER HUB
   # ===============================
-validate-and-push-api:
-  name: Validate and Push to Docker Hub
-  needs: publish-npm
-  runs-on: ubuntu-latest
+  validate-and-push-api:
+    name: Validate and Push to Docker Hub
+    needs: publish-npm
+    runs-on: ubuntu-latest
 
-  env:
-    MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-    MYSQL_DB: ${{ secrets.MYSQL_DB }}
-    MYSQL_HOST: mysql-container
-    MYSQL_USER: root
-    MYSQL_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+    env:
+      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+      MYSQL_DB: ${{ secrets.MYSQL_DB }}
+      MYSQL_HOST: mysql-container
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Start services with Docker Compose
-      run: docker compose up -d --build
+      - name: Start services with Docker Compose
+        run: docker compose up -d --build
 
-    - name: Check running containers
-      run: docker compose ps
+      - name: Check running containers
+        run: docker compose ps
 
-    - name: Wait for React app
-      run: |
-        echo "Waiting for React..."
-        for i in {1..20}; do
-          if curl -s http://localhost:3000 > /dev/null; then
-            echo "React is ready"
-            exit 0
-          fi
-          sleep 3
-        done
-        echo "React did not start"
-        docker compose logs
-        exit 1
-
-    - name: Run Cypress E2E tests
-      run: docker compose run --rm cypress
-
-    - name: Validate API Response
-      run: |
-        users_count=$(curl -s http://localhost:8000/users | jq 'length')
-        if [ "$users_count" -eq 0 ]; then
-          echo "API test failed: No users found"
+      - name: Wait for React app
+        run: |
+          echo "Waiting for React..."
+          for i in {1..20}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "React is ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "React did not start"
+          docker compose logs
           exit 1
-        fi
-        echo "API validation successful: $users_count users found"
 
-    - name: Login to Docker Hub
-      if: success()
-      run: |
-        echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Run Cypress E2E tests
+        run: docker compose run --rm cypress
 
-    - name: Tag and Push API Image to Docker Hub
-      if: success()
-      working-directory: server
-      run: |
-        docker build -f fastapi.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
+      - name: Validate API Response
+        run: |
+          users_count=$(curl -s http://localhost:8000/users | jq 'length')
+          if [ "$users_count" -eq 0 ]; then
+            echo "API test failed: No users found"
+            exit 1
+          fi
+          echo "API validation successful: $users_count users found"
 
-    - name: Cleanup
-      if: always()
-      run: docker compose down -v
+      - name: Login to Docker Hub
+        if: success()
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Tag and Push API Image to Docker Hub
+        if: success()
+        working-directory: server
+        run: |
+          docker build -f fastapi.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
 
