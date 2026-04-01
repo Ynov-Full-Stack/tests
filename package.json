@@ -1,0 +1,26 @@
+{
+  "name": "axel-ci-cd-ynov",
+  "version": "2.1.0",
+  "homepage": ".",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --coverage",
+    "jsdoc": "jsdoc -R ./my-app/README.md -c ./jsdoc.config.json -r ./my-app/src -d ./public/docs",
+    "build-npm-ci": "rm -rf dist && npx babel my-app/src --out-dir dist --copy-files"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-react-jsx": "^7.28.6",
+    "cypress-grep": "^3.0.4",
+    "jsdoc": "^4.0.5"
+  },
+  "dependencies": {
+    "axios": "^1.13.5"
+  }
+}

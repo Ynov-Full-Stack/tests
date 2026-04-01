@@ -1,0 +1,233 @@
+name: CI/CD - React App + NPM Publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ===============================
+  #  JOB 1 — BUILD & TEST
+  # ===============================
+  build_test:
+    name: Build, Test & Pages Artifact
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node_version: [20.x]
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+        working-directory: my-app
+
+      - name: Build React app
+        run: pnpm build
+        working-directory: my-app
+
+      # Configure GitHub Pages
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      # Upload artifact required for deploy
+      - name: Upload artifact (Pages)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pages
+          path: my-app/build
+
+
+  # ===============================
+  #  JOB 2 — PUBLISH NPM
+  # ===============================
+  publish-npm:
+    name: Publish to NPM
+    needs: build_test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node with NPM registry
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Compare local vs remote version
+      - name: Check version difference
+        id: version_check
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          LOCAL_VERSION=$(node -p "require('./package.json').version")
+          REMOTE_VERSION=$(npm view $PACKAGE_NAME version 2>/dev/null || echo "0.0.0")
+
+          echo "Local: $LOCAL_VERSION"
+          echo "Remote: $REMOTE_VERSION"
+
+          if [ "$LOCAL_VERSION" != "$REMOTE_VERSION" ]; then
+            echo "published=true" >> $GITHUB_OUTPUT
+          else
+            echo "published=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Build NPM package if version is new
+      - name: Build library
+        if: steps.version_check.outputs.published == 'true'
+        run: pnpm run build-npm-ci
+
+      # Publish only if version is new
+      - name: Publish to NPM
+        if: steps.version_check.outputs.published == 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Skip message if unchanged
+      - name: Skip publish
+        if: steps.version_check.outputs.published == 'false'
+        run: echo "Version unchanged — skipping publish."
+
+
+  # ===============================
+  #  JOB 3 — DEPLOY PAGES
+  # ===============================
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: publish-npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+
+    steps:
+      - name: Download Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Pages
+          path: my-app/build
+
+      - name: Deploy
+        uses: actions/deploy-pages@v4
+
+
+  # ===============================
+  #  JOB 4 — VALIDATION & DOCKER HUB
+  # ===============================
+  validate-and-push-api:
+    name: Validate and Push to Docker Hub
+    needs: publish-npm
+    runs-on: ubuntu-latest
+
+    env:
+      MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+      MYSQL_DB: ${{ secrets.MYSQL_DB }}
+      MYSQL_HOST: mysql-container
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Start services with Docker Compose
+        run: docker compose up -d --build
+
+      - name: Check running containers
+        run: docker compose ps
+
+      - name: Wait for FastAPI server
+        run: |
+          echo "Waiting for FastAPI..."
+          for i in {1..20}; do
+            if curl -s http://localhost:8000/health > /dev/null; then
+              echo "FastAPI is ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "FastAPI did not start"
+          docker compose logs server
+          exit 1
+
+      - name: Wait for React app
+        run: |
+          echo "Waiting for React..."
+          for i in {1..20}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "React is ready"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "React did not start"
+          docker compose logs
+          exit 1
+
+      - name: Run Cypress E2E tests
+        run: docker compose run --rm cypress
+
+      - name: Validate API Response
+        run: |
+          users_count=$(curl -s http://localhost:8000/users | jq 'length')
+          if [ "$users_count" -eq 0 ]; then
+            echo "API test failed: No users found"
+            exit 1
+          fi
+          echo "API validation successful: $users_count users found"
+
+      - name: Login to Docker Hub
+        if: success()
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Tag and Push API Image to Docker Hub
+        if: success()
+        working-directory: server
+        run: |
+          docker build -f fastapi.Dockerfile -t ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/fastapi:latest
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
+

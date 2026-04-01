@@ -1,0 +1,10 @@
+{
+    "source": {
+        "include": ["./my-app/src"]
+    },
+    "opts": {
+        "destination": "./my-app/public/docs",
+        "recurse": true,
+        "readme": "./my-app/README.md"
+    }
+}
