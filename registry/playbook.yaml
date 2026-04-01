@@ -39,6 +39,7 @@
         - "{{ project_dir }}/auth"
         - "{{ project_dir }}/data"
         - "{{ project_dir }}/ssl"
+        - "{{ project_dir }}/nginx"
 
     - name: Génération certificat SSL auto-signé
       command: >
