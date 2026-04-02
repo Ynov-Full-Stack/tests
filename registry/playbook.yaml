@@ -5,6 +5,8 @@
   vars:
     project_dir: "/home/ubuntu/registry-stack"
     public_ip: "{{ ansible_host }}"
+    registry_username: "admin"
+    registry_password: "admin123"
 
   tasks:
     - name: Mise à jour du cache APT
@@ -27,6 +29,20 @@
         groups: docker
         append: yes
 
+    - name: Configurer Docker pour accepter le registry insecure
+      copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "insecure-registries": ["{{ public_ip }}:5000", "{{ public_ip }}:443"]
+          }
+        mode: '0644'
+
+    - name: Redémarrer Docker
+      service:
+        name: docker
+        state: restarted
+
     - name: Création des dossiers
       file:
         path: "{{ item }}"
@@ -48,6 +64,7 @@
         -keyout {{ project_dir }}/ssl/registry.key
         -out {{ project_dir }}/ssl/registry.crt
         -subj "/CN={{ public_ip }}"
+        -addext "subjectAltName=IP:{{ public_ip }}"
       args:
         creates: "{{ project_dir }}/ssl/registry.crt"
 
@@ -59,7 +76,7 @@
 
     - name: Copie du docker-compose.yaml
       template:
-        src: compose.yaml.j2
+        src: templates/compose.yaml.j2
         dest: "{{ project_dir }}/compose.yaml"
         owner: ubuntu
         group: ubuntu
@@ -67,9 +84,11 @@
 
     - name: Copier config nginx
       template:
-        src: nginx.conf.j2
+        src: templates/nginx.conf.j2
         dest: "{{ project_dir }}/nginx/nginx.conf"
-
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
 
     - name: Stop anciens containers
       command: docker compose down
@@ -77,12 +96,13 @@
         chdir: "{{ project_dir }}"
 
     - name: Démarrage de la stack
-      community.docker.docker_compose_v2:
-        project_src: "{{ project_dir }}"
+      command: docker compose up -d 
+      args:
+        chdir: "{{ project_dir }}"
 
     - name: Login au registry Docker privé
-      docker_login:
-        registry_url: "https://{{ public_ip }}"
+      community.docker.docker_login:
+        registry_url: "https://{{ public_ip }}:443"
         username: "{{ registry_username }}"
         password: "{{ registry_password }}"
 
