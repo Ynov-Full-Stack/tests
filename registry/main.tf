@@ -35,13 +35,7 @@ resource "aws_key_pair" "generated_key" {
   public_key = tls_private_key.pk.public_key_openssh
 }
 
-resource "local_file" "ssh_key" {
-  filename        = "${path.module}/registry-key-simple.pem"
-  content         = tls_private_key.pk.private_key_pem
-  file_permission = "0400"
-}
-
-# 3. Security Group (Port 5000 ouvert !)
+# 3. Security Group (Port 443)
 resource "aws_security_group" "registry_sg" {
   name        = "registry-sg-simple-axel"
   description = "Allow SSH, HTTP (UI), Registry (443)"
@@ -92,6 +86,23 @@ resource "aws_instance" "registry_server" {
   }
 }
 
+#4 Outputs
 output "instance_ip" {
+  description = "Public IP registry server"
   value = aws_instance.registry_server.public_ip
+}
+
+output "private_key" {
+  description = "Private Key SSH generated"
+  value     = tls_private_key.pk.private_key_pem
+  sensitive = true
+}
+
+output "ssh_user" {
+  value = "ubuntu"
+}
+
+output "ssh_command" {
+  description = "SSH command to login"
+  value       = "ssh -i registry-key-simple.pem ubuntu@${aws_instance.registry_server.public_ip}"
 }
