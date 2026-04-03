@@ -5,12 +5,14 @@
   vars:
     project_dir: "/home/ubuntu/registry-stack"
     public_ip: "{{ ansible_host }}"
-
+    registry_username: "admin"
+    registry_password: "admin123"
+ 
   tasks:
     - name: Mise à jour du cache APT
       apt:
         update_cache: yes
-
+ 
     - name: Installation de docker et outils
       apt:
         name:
@@ -20,13 +22,7 @@
           - openssl
           - python3-passlib
         state: present
-
-    - name: Ajout user ubuntu au groupe docker
-      user:
-        name: ubuntu
-        groups: docker
-        append: yes
-
+ 
     - name: Création des dossiers
       file:
         path: "{{ item }}"
@@ -40,7 +36,7 @@
         - "{{ project_dir }}/data"
         - "{{ project_dir }}/ssl"
         - "{{ project_dir }}/nginx"
-
+ 
     - name: Génération certificat SSL auto-signé
       command: >
         openssl req -x509 -nodes -days 365
@@ -48,18 +44,51 @@
         -keyout {{ project_dir }}/ssl/registry.key
         -out {{ project_dir }}/ssl/registry.crt
         -subj "/CN={{ public_ip }}"
+        -addext "subjectAltName=IP:{{ public_ip }}"
       args:
         creates: "{{ project_dir }}/ssl/registry.crt"
 
+    - name: Trust du certificat au niveau du système
+      copy:
+        src: "{{ project_dir }}/ssl/registry.crt"
+        dest: "/usr/local/share/ca-certificates/registry.crt"
+        remote_src: yes
+        mode: '0644'
+ 
+    - name: Update du magasin de certificats (CA)
+      command: update-ca-certificates
+ 
+    - name: S'assurer que le fichier daemon.json est propre
+      file:
+        path: /etc/docker/daemon.json
+        state: absent
+ 
+    - name: Redémarrer Docker pour prendre en compte le nouveau certificat système
+      service:
+        name: docker
+        state: restarted
+ 
     - name: Génération mot de passe
       htpasswd:
         path: "{{ project_dir }}/auth/registry.password"
         name: "{{ registry_username }}"
         password: "{{ registry_password }}"
+        owner: ubuntu
+        group: ubuntu
+        mode: 0640
+        crypt_scheme: bcrypt # Essentiel pour Docker Registry
+ 
+    # - name: Copie du docker-compose.yaml et config nginx
+    #   template:
+    #     src: "templates/{{ item.src }}"
+    #     dest: "{{ project_dir }}/{{ item.dest }}"
+    #   loop:
+    #     - { src: 'compose.yaml.j2', dest: 'compose.yaml' }
+    #     - { src: 'nginx.conf.j2', dest: 'nginx/nginx.conf' }
 
     - name: Copie du docker-compose.yaml
       template:
-        src: compose.yaml.j2
+        src: templates/compose.yaml.j2
         dest: "{{ project_dir }}/compose.yaml"
         owner: ubuntu
         group: ubuntu
@@ -67,22 +96,23 @@
 
     - name: Copier config nginx
       template:
-        src: nginx.conf.j2
+        src: templates/nginx.conf.j2
         dest: "{{ project_dir }}/nginx/nginx.conf"
-
-
-    - name: Stop anciens containers
-      command: docker compose down
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+ 
+    - name: Démarrage de la stack
+      command: docker compose up -d 
       args:
         chdir: "{{ project_dir }}"
-
-    - name: Démarrage de la stack
-      community.docker.docker_compose_v2:
-        project_src: "{{ project_dir }}"
-
+ 
+    - name: Pause pour laisser les services démarrer
+      pause:
+        seconds: 10
+ 
     - name: Login au registry Docker privé
-      docker_login:
-        registry_url: "https://{{ public_ip }}"
+      community.docker.docker_login:
+        registry_url: "{{ public_ip }}"
         username: "{{ registry_username }}"
         password: "{{ registry_password }}"
-

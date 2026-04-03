@@ -13,6 +13,12 @@ provider "aws" {
   region = "eu-west-3" # Paris
 }
 
+locals {
+  ssh_key_name = "registry-key-simple-kenzo"
+  ssh_key_file = "${local.ssh_key_name}.pem"
+  ssh_sg_name = "registry-sg-simple-kenzo"
+}
+
 # 1. AMI Ubuntu 24.04
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -31,13 +37,28 @@ resource "tls_private_key" "pk" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = "registry-key-simple"
+  key_name   = local.ssh_key_name
   public_key = tls_private_key.pk.public_key_openssh
+}
+
+resource "local_file" "ssh_key" {
+  filename        = "${path.module}/${local.ssh_key_file}"
+  content         = tls_private_key.pk.private_key_pem
+  file_permission = "0400"
+}
+
+resource "local_file" "ansible_inventory" {
+  filename = "${path.module}/inventory.ini"
+  content = templatefile("${path.module}/templates/inventory.ini.tftpl", {
+    host_ip  = aws_instance.registry_server.public_ip
+    ssh_key  = "./${local.ssh_key_file}"
+    ssh_user = "ubuntu"
+  })
 }
 
 # 3. Security Group (Port 443)
 resource "aws_security_group" "registry_sg" {
-  name        = "registry-sg-simple-axel"
+  name        = local.ssh_sg_name
   description = "Allow SSH, HTTP (UI), Registry (443)"
   ingress {
     description = "SSH"
