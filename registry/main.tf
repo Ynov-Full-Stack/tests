@@ -14,9 +14,9 @@ provider "aws" {
 }
 
 locals {
-  ssh_key_name = "registry-key-simple-kenzo"
+  ssh_key_name = "registry-key-simple-github"
   ssh_key_file = "${local.ssh_key_name}.pem"
-  ssh_sg_name = "registry-sg-simple-kenzo"
+  ssh_sg_name = "registry-sg-simple-github"
 }
 
 # 1. AMI Ubuntu 24.04
