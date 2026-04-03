@@ -40,6 +40,26 @@
           - docker-compose-v2
         state: present
 
+    - name: Check active swap devices
+      command: swapon --show=NAME --noheadings
+      register: swap_devices
+      changed_when: false
+      failed_when: false
+
+    - name: Ensure 2G swap file exists and is enabled
+      shell: |
+        set -euo pipefail
+        if [ ! -f /swapfile ]; then
+          fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+          chmod 600 /swapfile
+          mkswap /swapfile
+        fi
+        swapon /swapfile || true
+        grep -q '^/swapfile ' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+      args:
+        executable: /bin/bash
+      when: swap_devices.stdout | trim == ""
+
     - name: Ensure project folders exist
       file:
         path: "{{ item }}"
@@ -125,6 +145,8 @@
       args:
         chdir: "{{ project_dir }}"
         executable: /bin/bash
+      async: 1200
+      poll: 5
       register: compose_up
       changed_when: true
       failed_when: false
