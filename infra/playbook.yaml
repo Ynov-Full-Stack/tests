@@ -114,3 +114,17 @@
       command: docker compose --env-file .env up -d
       args:
         chdir: "{{ project_dir }}"
+
+    - name: Wait for backend port to listen
+      wait_for:
+        host: "127.0.0.1"
+        port: 8000
+        delay: 2
+        timeout: 300
+
+    - name: Wait for frontend port to listen
+      wait_for:
+        host: "127.0.0.1"
+        port: 3000
+        delay: 2
+        timeout: 300

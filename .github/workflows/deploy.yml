@@ -209,6 +209,33 @@ jobs:
           set -euo pipefail
           ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$ANSIBLE_INVENTORY" "${{ env.ANSIBLE_PLAYBOOK_PATH }}" --extra-vars "@$RUNNER_TEMP/ansible-vars.json"
 
+      - name: Wait for local services on remote host
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i "$SSH_KEY_FILE" \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
+            "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" '
+              ok=0
+              for _ in {1..90}; do
+                if curl -fsS http://127.0.0.1:3000/ >/dev/null && curl -fsS http://127.0.0.1:8000/health >/dev/null; then
+                  ok=1
+                  break
+                fi
+                sleep 5
+              done
+
+              if [ "$ok" -ne 1 ]; then
+                echo "Local readiness check failed"
+                docker ps -a || true
+                cd /home/ubuntu/app-stack && docker compose logs --tail 120 react server db || true
+                exit 1
+              fi
+            '
+
       - name: Validate deployment
         shell: bash
         run: |
@@ -222,16 +249,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" '
-            set -e
+          ssh -i "$SSH_KEY_FILE" \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=10 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
+            "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" '
             echo "===== docker ps -a ====="
-            docker ps -a
+            docker ps -a || true
             echo ""
             echo "===== docker compose logs (last 200 lines) ====="
             cd /home/ubuntu/app-stack && docker compose logs --tail 200 || true
             echo ""
             echo "===== listening ports ====="
-            ss -tulpen
+            ss -tulpen || true
           '
 
       - name: Print deployment URLs
