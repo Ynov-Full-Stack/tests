@@ -165,8 +165,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          curl --fail --silent --show-error --insecure --connect-timeout 10 "$REGISTRY_URL/v2/" >/dev/null
-
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "$REGISTRY_HOST" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
 
       - name: Build and push backend image
