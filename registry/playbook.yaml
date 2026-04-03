@@ -101,6 +101,12 @@
         owner: ubuntu
         group: ubuntu
         mode: '0644'
+
+    - name: Ajouter ubuntu au groupe docker
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
  
     - name: Démarrage de la stack
       command: docker compose up -d 
