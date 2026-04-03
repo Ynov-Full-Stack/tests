@@ -1,0 +1,50 @@
+---
+- name: Déploiement d'un Registry Docker Sécurisé
+  hosts: registry_hosts
+  become: true
+  vars:
+    project_dir: "/home/ubuntu/registry-stack"
+    public_ip: "{{ ansible_host }}"
+    registry_username: "admin"
+    registry_password: "admin123"
+ 
+  tasks:
+    - name: Mise à jour du cache APT
+      apt:
+        update_cache: yes
+ 
+    - name: Installation de docker et outils
+      apt:
+        name:
+          - docker.io
+          - docker-compose-v2
+        state: present
+ 
+    - name: Création des dossiers
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+      loop:
+        - "{{ project_dir }}"
+
+    - name: Copie du docker-compose.yaml
+      template:
+        src: compose.yaml
+        dest: "{{ project_dir }}/compose.yaml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Ajouter ubuntu au groupe docker
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+ 
+    - name: Démarrage de la stack
+      command: docker compose up -d 
+      args:
+        chdir: "{{ project_dir }}"
