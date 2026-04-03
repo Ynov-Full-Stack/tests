@@ -229,3 +229,10 @@ jobs:
         run: |
           echo "Frontend URL: http://$SERVER_IP:3000"
           echo "Backend URL: http://$SERVER_IP:8000${BACKEND_HEALTH_PATH}"
+
+      
+      - name: Terraform destroy (cleanup)
+        if: failure()
+        working-directory: ${{ env.TERRAFORM_DIRECTORY }}
+        shell: bash
+        run: terraform destroy -auto-approve -input=false
