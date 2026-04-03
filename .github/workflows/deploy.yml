@@ -208,7 +208,22 @@ jobs:
         run: |
           set -euo pipefail
           ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$ANSIBLE_INVENTORY" "${{ env.ANSIBLE_PLAYBOOK_PATH }}" --extra-vars "@$RUNNER_TEMP/ansible-vars.json"
-
+      
+      - name: Debug remote server
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no $ANSIBLE_SSH_USER@$SERVER_IP "
+            echo '===== DOCKER PS ====='
+            docker ps -a
+            echo ''
+            echo '===== PORTS ====='
+            ss -tuln
+            echo ''
+            echo '===== TEST LOCAL ====='
+            curl -v http://localhost:3000 || true
+            curl -v http://localhost:8000/health || true
+      
       - name: Validate deployment
         shell: bash
         run: |
