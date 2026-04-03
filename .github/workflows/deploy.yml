@@ -71,6 +71,20 @@ jobs:
 
           echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> "$GITHUB_ENV"
           echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> "$GITHUB_ENV"
+      
+      - name: Configurer Docker pour accepter le registry insecure
+        copy:
+          dest: /etc/docker/daemon.json
+          content: |
+            {
+              "insecure-registries": ["$REGISTRY_HOST:5000", "$REGISTRY_HOST:443"]
+            }
+          mode: '0644'
+
+      - name: Redémarrer Docker
+        service:
+          name: docker
+          state: restarted
 
       - name: Login to private registry
         shell: bash
