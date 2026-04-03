@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.92"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   required_version = ">= 1.2"
@@ -13,10 +17,14 @@ provider "aws" {
   region = "eu-west-3" # Paris
 }
 
+resource "random_id" "deployment" {
+  byte_length = 3
+}
+
 locals {
-  ssh_key_name = "production-key-simple-deploy"
+  ssh_key_name = "production-key-${random_id.deployment.hex}"
   ssh_key_file = "${local.ssh_key_name}.pem"
-  ssh_sg_name = "production-sg-simple-deploy"
+  ssh_sg_name  = "production-sg-${random_id.deployment.hex}"
 }
 
 # 1. AMI Ubuntu 24.04
@@ -138,5 +146,5 @@ output "ssh_user" {
 
 output "ssh_command" {
   description = "SSH command to login"
-  value       = "ssh -i production-key-simple.pem ubuntu@${aws_instance.production_server.public_ip}"
+  value       = "ssh -i ${local.ssh_key_file} ubuntu@${aws_instance.production_server.public_ip}"
 }
