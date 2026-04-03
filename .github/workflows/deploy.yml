@@ -204,6 +204,7 @@ jobs:
           EOF
 
       - name: Run Ansible playbook
+        timeout-minutes: 15
         shell: bash
         run: |
           set -euo pipefail

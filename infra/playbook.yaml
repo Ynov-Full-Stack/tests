@@ -110,10 +110,42 @@
         executable: /bin/bash
       no_log: true
 
-    - name: Start application stack
-      command: docker compose --env-file .env up -d
+    - name: Pull application images
+      shell: |
+        set -euo pipefail
+        timeout 900 docker compose --env-file .env pull
       args:
         chdir: "{{ project_dir }}"
+        executable: /bin/bash
+
+    - name: Start application stack
+      shell: |
+        set -euo pipefail
+        timeout 900 docker compose --env-file .env up -d --remove-orphans
+      args:
+        chdir: "{{ project_dir }}"
+        executable: /bin/bash
+      register: compose_up
+      changed_when: true
+      failed_when: false
+
+    - name: Show compose status after startup attempt
+      command: docker compose --env-file .env ps
+      args:
+        chdir: "{{ project_dir }}"
+      changed_when: false
+
+    - name: Show compose logs when startup failed
+      command: docker compose --env-file .env logs --tail 200
+      args:
+        chdir: "{{ project_dir }}"
+      when: compose_up.rc != 0
+      changed_when: false
+
+    - name: Fail when startup command failed
+      fail:
+        msg: "docker compose up -d failed with exit code {{ compose_up.rc }}"
+      when: compose_up.rc != 0
 
     - name: Wait for backend port to listen
       wait_for:
