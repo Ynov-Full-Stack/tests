@@ -145,7 +145,7 @@ jobs:
           SERVER_IP="$(terraform output -raw "${{ env.TERRAFORM_OUTPUT_IP }}")"
           SSH_KEY_FILE="$RUNNER_TEMP/deploy-key.pem"
           INVENTORY_FILE="$RUNNER_TEMP/inventory.ini"
-          HOST_LINE="$SERVER_IP ansible_user=${{ env.ANSIBLE_SSH_USER }} ansible_ssh_private_key_file=$SSH_KEY_FILE ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=6 -o TCPKeepAlive=yes'"
+          HOST_LINE="$SERVER_IP ansible_user=${{ env.ANSIBLE_SSH_USER }} ansible_ssh_private_key_file=$SSH_KEY_FILE ansible_ssh_common_args='-o StrictHostKeyChecking=no -o ConnectTimeout=10'"
 
           terraform output -raw "${{ env.TERRAFORM_OUTPUT_PRIVATE_KEY }}" > "$SSH_KEY_FILE"
           chmod 600 "$SSH_KEY_FILE"
@@ -197,9 +197,7 @@ jobs:
             "backend_image": "${BACKEND_IMAGE}",
             "mysql_root_password": "${{ secrets.MYSQL_ROOT_PASSWORD }}",
             "mysql_db": "${{ secrets.MYSQL_DB }}",
-            "mysql_db_password": "${{ secrets.MYSQL_ROOT_PASSWORD }}",
-            "mysql_host": "db",
-            "app_public_ip": "${SERVER_IP}"
+            "mysql_db_password": "${{ secrets.MYSQL_ROOT_PASSWORD }}"
           }
           EOF
 
@@ -210,61 +208,12 @@ jobs:
           set -euo pipefail
           ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$ANSIBLE_INVENTORY" "${{ env.ANSIBLE_PLAYBOOK_PATH }}" --extra-vars "@$RUNNER_TEMP/ansible-vars.json"
 
-      - name: Wait for local services on remote host
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -i "$SSH_KEY_FILE" \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=10 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" '
-              ok=0
-              for _ in {1..90}; do
-                if curl -fsS http://127.0.0.1:3000/ >/dev/null && curl -fsS http://127.0.0.1:8000/health >/dev/null; then
-                  ok=1
-                  break
-                fi
-                sleep 5
-              done
-
-              if [ "$ok" -ne 1 ]; then
-                echo "Local readiness check failed"
-                docker ps -a || true
-                cd /home/ubuntu/app-stack && docker compose logs --tail 120 react server db || true
-                exit 1
-              fi
-            '
-
       - name: Validate deployment
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --retry 20 --retry-delay 5 --retry-connrefused "http://$SERVER_IP:3000/" >/dev/null
           curl --fail --silent --show-error --retry 20 --retry-delay 5 --retry-connrefused "http://$SERVER_IP:8000${{ env.BACKEND_HEALTH_PATH }}" >/dev/null
-
-      - name: Debug remote services on failure
-        if: ${{ failure() }}
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          ssh -i "$SSH_KEY_FILE" \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=10 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" '
-            echo "===== docker ps -a ====="
-            docker ps -a || true
-            echo ""
-            echo "===== docker compose logs (last 200 lines) ====="
-            cd /home/ubuntu/app-stack && docker compose logs --tail 200 || true
-            echo ""
-            echo "===== listening ports ====="
-            ss -tulpen || true
-          '
 
       - name: Print deployment URLs
         shell: bash

@@ -147,27 +147,6 @@
         executable: /bin/bash
       async: 1200
       poll: 5
-      register: compose_up
-      changed_when: true
-      failed_when: false
-
-    - name: Show compose status after startup attempt
-      command: docker compose --env-file .env ps
-      args:
-        chdir: "{{ project_dir }}"
-      changed_when: false
-
-    - name: Show compose logs when startup failed
-      command: docker compose --env-file .env logs --tail 200
-      args:
-        chdir: "{{ project_dir }}"
-      when: compose_up.rc != 0
-      changed_when: false
-
-    - name: Fail when startup command failed
-      fail:
-        msg: "docker compose up -d failed with exit code {{ compose_up.rc }}"
-      when: compose_up.rc != 0
 
     - name: Wait for backend port to listen
       wait_for:
