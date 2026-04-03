@@ -1,50 +1,116 @@
 ---
-- name: Déploiement d'un Registry Docker Sécurisé
-  hosts: registry_hosts
+- name: Deploy application stack
+  hosts: app_hosts
   become: true
   vars:
-    project_dir: "/home/ubuntu/registry-stack"
-    public_ip: "{{ ansible_host }}"
-    registry_username: "admin"
-    registry_password: "admin123"
- 
+    project_dir: "/home/ubuntu/app-stack"
+
   tasks:
-    - name: Mise à jour du cache APT
+    - name: Validate required deployment variables
+      assert:
+        that:
+          - registry_url is defined
+          - registry_url | length > 0
+          - registry_username is defined
+          - registry_username | length > 0
+          - registry_password is defined
+          - registry_password | length > 0
+          - frontend_image is defined
+          - frontend_image | length > 0
+          - backend_image is defined
+          - backend_image | length > 0
+          - mysql_root_password is defined
+          - mysql_root_password | length > 0
+          - mysql_db is defined
+          - mysql_db | length > 0
+        quiet: true
+
+    - name: Compute registry host from endpoint
+      set_fact:
+        registry_host: "{{ registry_url | regex_replace('^https?://', '') | regex_replace('/$', '') }}"
+
+    - name: Update APT cache
       apt:
-        update_cache: yes
- 
-    - name: Installation de docker et outils
+        update_cache: true
+
+    - name: Install Docker runtime
       apt:
         name:
           - docker.io
           - docker-compose-v2
         state: present
- 
-    - name: Création des dossiers
+
+    - name: Ensure project folders exist
       file:
         path: "{{ item }}"
         state: directory
         owner: ubuntu
         group: ubuntu
-        mode: '0755'
+        mode: "0755"
       loop:
         - "{{ project_dir }}"
+        - "{{ project_dir }}/sqlfiles"
 
-    - name: Copie du docker-compose.yaml
-      template:
-        src: compose.yaml
-        dest: "{{ project_dir }}/compose.yaml"
-        owner: ubuntu
-        group: ubuntu
-        mode: '0644'
-
-    - name: Ajouter ubuntu au groupe docker
+    - name: Add ubuntu user to docker group
       user:
         name: ubuntu
         groups: docker
-        append: yes
- 
-    - name: Démarrage de la stack
-      command: docker compose up -d 
+        append: true
+
+    - name: Copy compose file to server
+      copy:
+        src: "{{ playbook_dir }}/compose.yaml"
+        dest: "{{ project_dir }}/compose.yaml"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Copy SQL migrations to server
+      copy:
+        src: "{{ playbook_dir }}/../sqlfiles/"
+        dest: "{{ project_dir }}/sqlfiles/"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0644"
+
+    - name: Configure Docker insecure registry for private endpoint
+      copy:
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {
+            "insecure-registries": ["{{ registry_host }}"]
+          }
+
+    - name: Restart Docker service
+      service:
+        name: docker
+        state: restarted
+        enabled: true
+
+    - name: Create runtime environment file
+      copy:
+        dest: "{{ project_dir }}/.env"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+        content: |
+          FRONTEND_IMAGE={{ frontend_image }}
+          BACKEND_IMAGE={{ backend_image }}
+          MYSQL_ROOT_PASSWORD={{ mysql_root_password }}
+          MYSQL_DB={{ mysql_db }}
+          MYSQL_DB_PASSWORD={{ mysql_db_password | default(mysql_root_password) }}
+
+    - name: Login to private registry
+      shell: |
+        echo "{{ registry_password }}" | docker login "{{ registry_host }}" -u "{{ registry_username }}" --password-stdin
+      args:
+        executable: /bin/bash
+      no_log: true
+
+    - name: Start application stack
+      command: docker compose --env-file .env up -d
       args:
         chdir: "{{ project_dir }}"

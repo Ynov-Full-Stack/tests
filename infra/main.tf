@@ -49,8 +49,8 @@ resource "local_file" "ssh_key" {
 
 resource "local_file" "ansible_inventory" {
   filename = "${path.module}/inventory.ini"
-  content = templatefile("${path.module}/templates/inventory.ini.tftpl", {
-    host_ip  = aws_instance.registry_server.public_ip
+  content = templatefile("${path.module}/inventory.ini.tftpl", {
+    host_ip  = aws_instance.production_server.public_ip
     ssh_key  = "./${local.ssh_key_file}"
     ssh_user = "ubuntu"
   })
@@ -72,7 +72,7 @@ resource "aws_security_group" "production_sg" {
     description = "Open Backend"
     from_port = 8000
     to_port = 8000
-    protocol = "http"
+    protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
 
   }
@@ -81,7 +81,7 @@ resource "aws_security_group" "production_sg" {
     description = "Open Frontend"
     from_port   = 3000
     to_port     = 3000
-    protocol    = "http"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   
@@ -89,7 +89,7 @@ resource "aws_security_group" "production_sg" {
     description = "Open Adminer"
     from_port   = 39080
     to_port     = 39080
-    protocol    = "http"
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -99,6 +99,7 @@ resource "aws_security_group" "production_sg" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 # 4. Instance EC2

@@ -1,4 +1,4 @@
-name: Push Images
+name: Deploy App Stack
 
 on:
   workflow_dispatch:
@@ -7,12 +7,41 @@ permissions:
   contents: read
 
 jobs:
-  push-images:
+  deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-west-3
+      TF_IN_AUTOMATION: "true"
+      TERRAFORM_DIRECTORY: infra
+      TERRAFORM_OUTPUT_IP: instance_ip
+      TERRAFORM_OUTPUT_PRIVATE_KEY: private_key
+      ANSIBLE_PLAYBOOK_PATH: infra/playbook.yaml
+      ANSIBLE_SSH_USER: ubuntu
+      BACKEND_HEALTH_PATH: /health
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || { echo "Missing required secret: AWS_ACCESS_KEY_ID"; exit 1; }
+          [ -n "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ] || { echo "Missing required secret: AWS_SECRET_ACCESS_KEY"; exit 1; }
+          [ -n "${{ secrets.REGISTRY_ENDPOINT }}" ] || { echo "Missing required secret: REGISTRY_ENDPOINT"; exit 1; }
+          [ -n "${{ secrets.REGISTRY_USERNAME }}" ] || { echo "Missing required secret: REGISTRY_USERNAME"; exit 1; }
+          [ -n "${{ secrets.REGISTRY_PASSWORD }}" ] || { echo "Missing required secret: REGISTRY_PASSWORD"; exit 1; }
+          [ -n "${{ secrets.MYSQL_ROOT_PASSWORD }}" ] || { echo "Missing required secret: MYSQL_ROOT_PASSWORD"; exit 1; }
+          [ -n "${{ secrets.MYSQL_DB }}" ] || { echo "Missing required secret: MYSQL_DB"; exit 1; }
+
+      - name: Validate paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "${{ env.TERRAFORM_DIRECTORY }}"
+          test -f "${{ env.ANSIBLE_PLAYBOOK_PATH }}"
 
       - name: Resolve registry endpoint
         shell: bash
@@ -20,10 +49,7 @@ jobs:
           set -euo pipefail
 
           REGISTRY_ENDPOINT_RAW="${{ secrets.REGISTRY_ENDPOINT }}"
-          if [ -z "$REGISTRY_ENDPOINT_RAW" ]; then
-            echo "Missing REGISTRY_ENDPOINT secret"
-            exit 1
-          fi
+          [ -n "$REGISTRY_ENDPOINT_RAW" ] || { echo "REGISTRY_ENDPOINT secret is empty"; exit 1; }
 
           REGISTRY_HOST="${REGISTRY_ENDPOINT_RAW#https://}"
           REGISTRY_HOST="${REGISTRY_HOST#http://}"
@@ -64,7 +90,9 @@ jobs:
           EOF
 
       - name: Restart Docker
+        shell: bash
         run: |
+          set -euo pipefail
           sudo systemctl restart docker
           sudo systemctl is-active docker
 
@@ -72,7 +100,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "$REGISTRY_HOST" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
 
       - name: Build and push backend image
@@ -88,3 +115,109 @@ jobs:
           set -euo pipefail
           docker build -f my-app/react.Dockerfile -t "$FRONTEND_IMAGE" my-app
           docker push "$FRONTEND_IMAGE"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: ${{ env.TERRAFORM_DIRECTORY }}
+        shell: bash
+        run: terraform init -input=false
+
+      - name: Terraform apply
+        working-directory: ${{ env.TERRAFORM_DIRECTORY }}
+        shell: bash
+        run: terraform apply -auto-approve -input=false
+
+      - name: Bridge Terraform outputs to Ansible
+        working-directory: ${{ env.TERRAFORM_DIRECTORY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SERVER_IP="$(terraform output -raw "${{ env.TERRAFORM_OUTPUT_IP }}")"
+          SSH_KEY_FILE="$RUNNER_TEMP/deploy-key.pem"
+          INVENTORY_FILE="$RUNNER_TEMP/inventory.ini"
+          HOST_LINE="$SERVER_IP ansible_user=${{ env.ANSIBLE_SSH_USER }} ansible_ssh_private_key_file=$SSH_KEY_FILE ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
+
+          terraform output -raw "${{ env.TERRAFORM_OUTPUT_PRIVATE_KEY }}" > "$SSH_KEY_FILE"
+          chmod 600 "$SSH_KEY_FILE"
+
+          {
+            echo "[app_hosts]"
+            echo "$HOST_LINE"
+          } > "$INVENTORY_FILE"
+
+          echo "SERVER_IP=$SERVER_IP" >> "$GITHUB_ENV"
+          echo "SSH_KEY_FILE=$SSH_KEY_FILE" >> "$GITHUB_ENV"
+          echo "ANSIBLE_INVENTORY=$INVENTORY_FILE" >> "$GITHUB_ENV"
+
+      - name: Wait for SSH availability
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for _ in {1..30}; do
+            if ssh -i "$SSH_KEY_FILE" -o StrictHostKeyChecking=no -o ConnectTimeout=5 "${{ env.ANSIBLE_SSH_USER }}@$SERVER_IP" "echo ready" >/dev/null 2>&1; then
+              echo "SSH is reachable"
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "SSH is not reachable after timeout"
+          exit 1
+
+      - name: Install Ansible
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y ansible
+          ansible-galaxy collection install community.docker
+
+      - name: Create Ansible vars file
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat > "$RUNNER_TEMP/ansible-vars.json" <<EOF
+          {
+            "registry_url": "${REGISTRY_URL}",
+            "registry_username": "${{ secrets.REGISTRY_USERNAME }}",
+            "registry_password": "${{ secrets.REGISTRY_PASSWORD }}",
+            "frontend_image": "${FRONTEND_IMAGE}",
+            "backend_image": "${BACKEND_IMAGE}",
+            "mysql_root_password": "${{ secrets.MYSQL_ROOT_PASSWORD }}",
+            "mysql_db": "${{ secrets.MYSQL_DB }}",
+            "mysql_db_password": "${{ secrets.MYSQL_ROOT_PASSWORD }}",
+            "mysql_host": "db",
+            "app_public_ip": "${SERVER_IP}"
+          }
+          EOF
+
+      - name: Run Ansible playbook
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i "$ANSIBLE_INVENTORY" "${{ env.ANSIBLE_PLAYBOOK_PATH }}" --extra-vars "@$RUNNER_TEMP/ansible-vars.json"
+
+      - name: Validate deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 20 --retry-delay 5 --retry-connrefused "http://$SERVER_IP:3000/" >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-delay 5 --retry-connrefused "http://$SERVER_IP:8000${{ env.BACKEND_HEALTH_PATH }}" >/dev/null
+
+      - name: Print deployment URLs
+        shell: bash
+        run: |
+          echo "Frontend URL: http://$SERVER_IP:3000"
+          echo "Backend URL: http://$SERVER_IP:8000${{ env.BACKEND_HEALTH_PATH }}"

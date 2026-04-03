@@ -1,0 +1,90 @@
+name: Push Images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  push-images:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve registry endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REGISTRY_ENDPOINT_RAW="${{ secrets.REGISTRY_ENDPOINT }}"
+          if [ -z "$REGISTRY_ENDPOINT_RAW" ]; then
+            echo "Missing REGISTRY_ENDPOINT secret"
+            exit 1
+          fi
+
+          REGISTRY_HOST="${REGISTRY_ENDPOINT_RAW#https://}"
+          REGISTRY_HOST="${REGISTRY_HOST#http://}"
+          REGISTRY_HOST="${REGISTRY_HOST%/}"
+          if [[ "$REGISTRY_HOST" != *:* ]]; then
+            REGISTRY_HOST="$REGISTRY_HOST:443"
+          fi
+
+          REGISTRY_URL="https://$REGISTRY_HOST"
+
+          echo "REGISTRY_HOST=$REGISTRY_HOST" >> "$GITHUB_ENV"
+          echo "REGISTRY_URL=$REGISTRY_URL" >> "$GITHUB_ENV"
+
+      - name: Set image names
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          REPOSITORY="${{ github.repository }}"
+          REPOSITORY="$(echo "$REPOSITORY" | tr '[:upper:]' '[:lower:]')"
+
+          FRONTEND_IMAGE="$REGISTRY_HOST/$REPOSITORY/frontend:${{ github.sha }}"
+          BACKEND_IMAGE="$REGISTRY_HOST/$REPOSITORY/backend:${{ github.sha }}"
+
+          echo "FRONTEND_IMAGE=$FRONTEND_IMAGE" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE=$BACKEND_IMAGE" >> "$GITHUB_ENV"
+
+      - name: Configure Docker insecure registry
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sudo mkdir -p /etc/docker
+          sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+          {
+            "insecure-registries": ["$REGISTRY_HOST"]
+          }
+          EOF
+
+      - name: Restart Docker
+        run: |
+          sudo systemctl restart docker
+          sudo systemctl is-active docker
+
+      - name: Login to private registry
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login "$REGISTRY_HOST" -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin
+
+      - name: Build and push backend image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -f server/fastapi.Dockerfile -t "$BACKEND_IMAGE" server
+          docker push "$BACKEND_IMAGE"
+
+      - name: Build and push frontend image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build -f my-app/react.Dockerfile -t "$FRONTEND_IMAGE" my-app
+          docker push "$FRONTEND_IMAGE"
