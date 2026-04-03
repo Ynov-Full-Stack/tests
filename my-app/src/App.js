@@ -7,16 +7,16 @@ function App() {
   return (
     <UserProvider>
       <Router>
-        <div className="min-h-screen bg-slate-100 text-slate-900">
-          <nav className="border-b border-slate-800 bg-slate-900 text-slate-100">
-            <ul className="mx-auto flex w-full max-w-5xl list-none gap-6 px-4 py-3 text-sm font-semibold">
+        <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-100 to-sky-100/70 text-slate-900">
+          <nav className="border-b border-slate-800/70 bg-slate-950 text-slate-100 shadow-lg">
+            <ul className="mx-auto flex w-full max-w-5xl list-none items-center justify-center gap-8 px-4 py-3 text-sm font-semibold tracking-wide">
               <li>
-                <Link className="transition hover:text-sky-300" to="/tests">
+                <Link className="rounded-full px-3 py-1 transition hover:bg-slate-800 hover:text-sky-300" to="/tests">
                   Accueil
                 </Link>
               </li>
               <li>
-                <Link className="transition hover:text-sky-300" to="/register">
+                <Link className="rounded-full px-3 py-1 transition hover:bg-slate-800 hover:text-sky-300" to="/register">
                   Inscription
                 </Link>
               </li>
@@ -26,7 +26,7 @@ function App() {
             </ul>
           </nav>
 
-          <main className="mx-auto w-full max-w-5xl px-4 py-6">
+          <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-10">
             <Routes>
               <Route path="/tests" element={<Homepage />} />
               <Route path="/register" element={<RegistrationForm />} />
